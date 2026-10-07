@@ -16,8 +16,7 @@ import 'package:raigon_art/features/customers/widgets/form_kit.dart';
 import 'package:raigon_art/features/customers/widgets/frame_spec_fields.dart';
 import 'package:raigon_art/features/dashboard/data/dashboard_mock.dart';
 
-/// Opens the Add New Customer & Frame Order modal. On save the customer is
-/// added to [CustomerStore] and shows up in the Customers table.
+
 Future<void> showAddCustomerDialog(BuildContext context) async {
   final result = await showGeneralDialog<Customer>(
     context: context,
@@ -114,7 +113,6 @@ class _AddCustomerDialogState extends State<AddCustomerDialog> {
     super.dispose();
   }
 
-  // ------------------------------------------------------------- photos
 
   Future<List<PickedPhoto>> _pick({bool multiple = true}) async {
     try {
@@ -247,7 +245,6 @@ class _AddCustomerDialogState extends State<AddCustomerDialog> {
     });
   }
 
-  // ------------------------------------------------------------ payment
 
   void _recalc() {
     final total = double.tryParse(_total.text) ?? 0;
@@ -264,7 +261,6 @@ class _AddCustomerDialogState extends State<AddCustomerDialog> {
     });
   }
 
-  // --------------------------------------------------------------- save
 
   String _join(List<String> v) => v.isEmpty
       ? '—'
@@ -334,7 +330,6 @@ class _AddCustomerDialogState extends State<AddCustomerDialog> {
     Navigator.of(context).pop(customer);
   }
 
-  // -------------------------------------------------------------- build
 
   @override
   Widget build(BuildContext context) {
@@ -354,7 +349,7 @@ class _AddCustomerDialogState extends State<AddCustomerDialog> {
             padding: EdgeInsets.all(size.width < 600 ? 12 : 24),
             child: ConstrainedBox(
               constraints: BoxConstraints(
-                maxWidth: 680,
+                maxWidth: 840,
                 maxHeight: size.height - 48,
               ),
               child: Material(
@@ -645,7 +640,6 @@ class _AddCustomerDialogState extends State<AddCustomerDialog> {
     );
   }
 
-  // --------------------------------------------------------- mode cards
 
   Widget _modeCard(
     FormColors c,
@@ -735,7 +729,6 @@ class _AddCustomerDialogState extends State<AddCustomerDialog> {
     );
   }
 
-  // ------------------------------------------------------ same-frame mode
 
   Widget _sameContent(FormColors c) {
     final p = c.p;
@@ -887,7 +880,6 @@ class _AddCustomerDialogState extends State<AddCustomerDialog> {
     );
   }
 
-  // ------------------------------------------------------ individual mode
 
   Widget _individualContent(FormColors c) {
     final p = c.p;
@@ -1120,7 +1112,6 @@ class _AddCustomerDialogState extends State<AddCustomerDialog> {
     );
   }
 
-  // -------------------------------------------------------------- footer
 
   Widget _footer(FormColors c) {
     final p = c.p;

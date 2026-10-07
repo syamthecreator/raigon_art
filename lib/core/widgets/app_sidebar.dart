@@ -4,7 +4,6 @@ import 'package:raigon_art/core/theme/app_colors.dart';
 import 'package:raigon_art/core/theme/app_palette.dart';
 import 'package:raigon_art/features/shell/presentation/shell_scope.dart';
 
-
 class AppSidebar extends StatelessWidget {
   const AppSidebar({
     super.key,
@@ -79,22 +78,22 @@ class AppSidebar extends StatelessWidget {
   }
 
   Widget _logoTile(AppPalette p) => Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: p.avatarBg,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.12),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
+    width: 44,
+    height: 44,
+    decoration: BoxDecoration(
+      color: p.avatarBg,
+      borderRadius: BorderRadius.circular(12),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.12),
+          blurRadius: 10,
+          offset: const Offset(0, 4),
         ),
-        clipBehavior: Clip.antiAlias,
-        child: Image.asset(AssetConstants.raigonLogo, fit: BoxFit.cover),
-      );
+      ],
+    ),
+    clipBehavior: Clip.antiAlias,
+    child: Image.asset(AssetConstants.raigonLogo, fit: BoxFit.cover),
+  );
 
   Widget _header(AppPalette p, bool showLabels) {
     return SizedBox(

@@ -45,7 +45,7 @@ class DashboardScreen extends StatelessWidget {
                   ),
                   const SizedBox(width: 16),
                   InkWell(
-                    onTap: () {},
+                    onTap: () => ShellScope.of(context).openAddCustomer(),
                     borderRadius: BorderRadius.circular(10),
                     child: Container(
                       padding: EdgeInsets.symmetric(

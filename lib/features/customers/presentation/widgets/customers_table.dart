@@ -44,7 +44,6 @@ class _CustomersTableState extends State<CustomersTable> {
     'ORDER DATE',
     'ACTIONS',
   ];
-  // Fixed widths for the first 10 columns; ACTIONS takes the remainder.
   static const _w = <double>[120, 230, 150, 260, 220, 150, 160, 70, 170, 150];
   static const double _actionsMin = 200;
   static const double _hPad = 28;
@@ -285,7 +284,6 @@ class _CustomersTableState extends State<CustomersTable> {
       );
 }
 
-/// Up to 3 thumbnails, a "+N" tile for the rest, then "(count)".
 class PhotoStrip extends StatelessWidget {
   const PhotoStrip({
     super.key,

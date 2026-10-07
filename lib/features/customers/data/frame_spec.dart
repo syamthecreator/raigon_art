@@ -1,7 +1,5 @@
 import 'dart:typed_data';
 
-/// One frame configuration (one photo in "individual" mode, or the shared
-/// spec in "same frame" mode).
 class FrameSpec {
   const FrameSpec({
     required this.size,
@@ -31,7 +29,6 @@ class FrameSpec {
   final String? photoName;
   final Uint8List? photoBytes;
 
-  /// Custom size wins when both width and height are filled.
   String get sizeLabel =>
       (customWidth.isNotEmpty && customHeight.isNotEmpty)
           ? '$customWidth × $customHeight ${unit.toLowerCase()}'

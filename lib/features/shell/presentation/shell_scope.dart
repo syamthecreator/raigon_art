@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 enum NavDestination {
   dashboard,
   customers,
-  addCustomer,
   orders,
   photoCollection,
   frameSizes,
@@ -13,36 +12,48 @@ enum NavDestination {
 
 extension NavDestinationX on NavDestination {
   String get label => switch (this) {
-        NavDestination.dashboard => 'Dashboard',
-        NavDestination.customers => 'Customers',
-        NavDestination.addCustomer => 'Add New Customer',
-        NavDestination.orders => 'Orders',
-        NavDestination.photoCollection => 'Photo Collection',
-        NavDestination.frameSizes => 'Frame Sizes',
-        NavDestination.reports => 'Reports',
-        NavDestination.settings => 'Settings',
-      };
+    NavDestination.dashboard => 'Dashboard',
+    NavDestination.customers => 'Customers',
+    NavDestination.orders => 'Orders',
+    NavDestination.photoCollection => 'Photo Collection',
+    NavDestination.frameSizes => 'Frame Sizes',
+    NavDestination.reports => 'Reports',
+    NavDestination.settings => 'Settings',
+  };
 
   IconData get icon => switch (this) {
-        NavDestination.dashboard => Icons.pie_chart,
-        NavDestination.customers => Icons.groups,
-        NavDestination.addCustomer => Icons.person_add,
-        NavDestination.orders => Icons.move_to_inbox,
-        NavDestination.photoCollection => Icons.photo_library,
-        NavDestination.frameSizes => Icons.straighten,
-        NavDestination.reports => Icons.bar_chart,
-        NavDestination.settings => Icons.tune,
-      };
+    NavDestination.dashboard => Icons.pie_chart,
+    NavDestination.customers => Icons.groups,
+    NavDestination.orders => Icons.move_to_inbox,
+    NavDestination.photoCollection => Icons.photo_library,
+    NavDestination.frameSizes => Icons.straighten,
+    NavDestination.reports => Icons.bar_chart,
+    NavDestination.settings => Icons.tune,
+  };
 }
 
 class ShellScope extends InheritedWidget {
-  const ShellScope({super.key, required this.goTo, required super.child});
+  const ShellScope({
+    super.key,
+    required this.goTo,
+    required this.openAddCustomer,
+    required super.child,
+  });
 
-  final void Function(NavDestination destination) goTo;
+  final ValueChanged<NavDestination> goTo;
+  final VoidCallback openAddCustomer;
 
-  static ShellScope of(BuildContext context) =>
-      context.dependOnInheritedWidgetOfExactType<ShellScope>()!;
+  static ShellScope of(BuildContext context) {
+    final scope = context.dependOnInheritedWidgetOfExactType<ShellScope>();
+
+    assert(scope != null, 'ShellScope not found in widget tree.');
+
+    return scope!;
+  }
 
   @override
-  bool updateShouldNotify(ShellScope oldWidget) => false;
+  bool updateShouldNotify(ShellScope oldWidget) {
+    return goTo != oldWidget.goTo ||
+        openAddCustomer != oldWidget.openAddCustomer;
+  }
 }

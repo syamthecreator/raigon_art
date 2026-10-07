@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import 'package:raigon_art/core/theme/app_colors.dart';
 import 'package:raigon_art/core/theme/app_palette.dart';
 
-/// Colours used by the Add Customer form (light + dark).
 class FormColors {
   FormColors._(this.p);
   final AppPalette p;
@@ -46,7 +45,6 @@ const _monthsFull = [
 String fmtDate(DateTime d) =>
     '${_months[d.month - 1]} ${d.day.toString().padLeft(2, '0')}, ${d.year}';
 
-// ------------------------------------------------------------ layout bits
 
 class SectionHeader extends StatelessWidget {
   const SectionHeader({super.key, required this.icon, required this.label});
@@ -126,7 +124,6 @@ class LabeledField extends StatelessWidget {
   }
 }
 
-/// Row on wide layouts, stacked on narrow ones.
 class FormRow extends StatelessWidget {
   const FormRow({super.key, required this.children, this.flex, this.gap = 16});
   final List<Widget> children;
@@ -162,7 +159,6 @@ class FormRow extends StatelessWidget {
   }
 }
 
-// ----------------------------------------------------------------- inputs
 
 class AppTextBox extends StatefulWidget {
   const AppTextBox({
@@ -306,7 +302,6 @@ class _Stepper extends StatelessWidget {
   }
 }
 
-/// Number input with a small up/down stepper.
 class NumberBox extends StatelessWidget {
   const NumberBox({
     super.key,
@@ -485,7 +480,6 @@ class _FormDropdownState<T> extends State<FormDropdown<T>> {
   }
 }
 
-// ------------------------------------------------------------- date field
 
 class DateField extends StatefulWidget {
   const DateField({
@@ -639,7 +633,7 @@ class _CalendarCardState extends State<_CalendarCard> {
     final c = FormColors.of(context);
     final p = c.p;
     final first = DateTime(_month.year, _month.month, 1);
-    final lead = first.weekday % 7; // Sunday = 0
+    final lead = first.weekday % 7;
     final days = DateUtils.getDaysInMonth(_month.year, _month.month);
     final prev = DateTime(_month.year, _month.month - 1);
     final prevDays = DateUtils.getDaysInMonth(prev.year, prev.month);
@@ -807,7 +801,6 @@ class _CalendarCardState extends State<_CalendarCard> {
   }
 }
 
-// --------------------------------------------------------------- painters
 
 class DashedLinePainter extends CustomPainter {
   const DashedLinePainter(this.color);

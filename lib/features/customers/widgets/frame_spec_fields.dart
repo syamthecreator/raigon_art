@@ -30,7 +30,6 @@ const kOrientations = [
   'Square',
 ];
 
-/// Mutable form state for one frame configuration.
 class FrameSpecData {
   FrameSpecData()
     : width = TextEditingController(),

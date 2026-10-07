@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:raigon_art/app/app_router.dart';
 import 'package:raigon_art/core/theme/app_palette.dart';
-import 'package:raigon_art/core/widgets/add_customer_dialog.dart';
+import 'package:raigon_art/features/customers/presentation/widgets/add_customer_dialog.dart';
 import 'package:raigon_art/core/widgets/app_sidebar.dart';
 import 'package:raigon_art/core/widgets/app_snackbar.dart';
 import 'package:raigon_art/core/widgets/app_top_bar.dart';
@@ -11,8 +11,6 @@ import 'package:raigon_art/features/customers/presentation/screens/customers_scr
 import 'package:raigon_art/features/dashboard/presentation/screens/dashboard_screen.dart';
 import 'package:raigon_art/features/shell/presentation/shell_scope.dart';
 
-/// Fixed frame: sidebar + top bar + notifications + profile.
-/// Only [_page] (the inner content) changes between destinations.
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
 
@@ -29,21 +27,14 @@ class _AppShellState extends State<AppShell> {
       _collapsedOverride ?? MediaQuery.of(context).size.width < 1000;
 
   void _goTo(NavDestination d) {
-    // "Add New Customer" opens the modal over the Customers screen.
-    if (d == NavDestination.addCustomer) {
-      setState(() {
-        _current = NavDestination.customers;
-        _showNotifications = false;
-      });
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) showAddCustomerDialog(context);
-      });
-      return;
-    }
     setState(() {
       _current = d;
       _showNotifications = false;
     });
+  }
+
+  void _openAddCustomer() {
+    showAddCustomerDialog(context);
   }
 
   void _logout() {
@@ -51,18 +42,18 @@ class _AppShellState extends State<AppShell> {
     Navigator.of(context).pushNamedAndRemoveUntil(AppRouter.auth, (_) => false);
   }
 
-  /// Swap inner content here as each screen is built.
   Widget _page() => switch (_current) {
-        NavDestination.dashboard => const DashboardScreen(),
-        NavDestination.customers => const CustomersScreen(),
-        _ => _PlaceholderScreen(title: _current.label),
-      };
+    NavDestination.dashboard => const DashboardScreen(),
+    NavDestination.customers => const CustomersScreen(),
+    _ => _PlaceholderScreen(title: _current.label),
+  };
 
   @override
   Widget build(BuildContext context) {
     final p = AppPalette.of(context);
     return ShellScope(
       goTo: _goTo,
+      openAddCustomer: _openAddCustomer,
       child: Scaffold(
         backgroundColor: p.pageBg,
         body: Stack(

@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:raigon_art/core/theme/app_colors.dart';
 import 'package:raigon_art/core/theme/app_palette.dart';
-import 'package:raigon_art/core/csv/csv_downloader.dart';
+import 'package:raigon_art/service/csv/csv_downloader.dart';
 import 'package:raigon_art/core/widgets/app_dropdown.dart';
 import 'package:raigon_art/core/widgets/app_snackbar.dart';
 import 'package:raigon_art/features/customers/data/customer_csv.dart';
@@ -36,7 +36,6 @@ enum SortOption {
   final String label;
 }
 
-/// Inner content only. Sidebar, top bar, notifications live in AppShell.
 class CustomersScreen extends StatefulWidget {
   const CustomersScreen({super.key});
 
@@ -73,9 +72,15 @@ class _CustomersScreenState extends State<CustomersScreen> {
     final q = _searchCtrl.text.trim().toLowerCase();
     final list = CustomerStore.customers.value.where((c) {
       final statusOk = _status.status == null || c.status == _status.status;
-      final searchOk = q.isEmpty ||
-          [c.id, c.name, c.phone, c.city, c.address]
-              .any((s) => s.toLowerCase().contains(q));
+      final searchOk =
+          q.isEmpty ||
+          [
+            c.id,
+            c.name,
+            c.phone,
+            c.city,
+            c.address,
+          ].any((s) => s.toLowerCase().contains(q));
       return statusOk && searchOk;
     }).toList();
     switch (_sort) {
@@ -84,7 +89,9 @@ class _CustomersScreenState extends State<CustomersScreen> {
       case SortOption.oldest:
         list.sort((a, b) => a.orderDate.compareTo(b.orderDate));
       case SortOption.name:
-        list.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+        list.sort(
+          (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+        );
       case SortOption.amount:
         list.sort((a, b) => b.total.compareTo(a.total));
     }
@@ -137,9 +144,9 @@ class _CustomersScreenState extends State<CustomersScreen> {
                     ),
                     CustomersTable(
                       customers: pageItems,
-                      onView: (c) {}, 
-                      onWhatsApp: (c) {}, 
-                      onEdit: (c) {}, 
+                      onView: (c) {},
+                      onWhatsApp: (c) {},
+                      onEdit: (c) {},
                       onDelete: (c) {},
                     ),
                     _footer(p, all.length, page, totalPages),
@@ -182,16 +189,25 @@ class _CustomersScreenState extends State<CustomersScreen> {
           onTap: _exportCsv,
           borderRadius: BorderRadius.circular(10),
           child: Container(
-            padding: EdgeInsets.symmetric(horizontal: wide ? 20 : 14, vertical: 14),
+            padding: EdgeInsets.symmetric(
+              horizontal: wide ? 20 : 14,
+              vertical: 14,
+            ),
             decoration: BoxDecoration(
               color: p.chipFill,
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: p.isDark ? p.border : Colors.transparent),
+              border: Border.all(
+                color: p.isDark ? p.border : Colors.transparent,
+              ),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                FaIcon(FontAwesomeIcons.fileExport, size: 17, color: p.textPrimary),
+                FaIcon(
+                  FontAwesomeIcons.fileExport,
+                  size: 17,
+                  color: p.textPrimary,
+                ),
                 if (wide) ...[
                   const SizedBox(width: 10),
                   Text(
@@ -209,10 +225,13 @@ class _CustomersScreenState extends State<CustomersScreen> {
         ),
         const SizedBox(width: 12),
         InkWell(
-          onTap: () => ShellScope.of(context).goTo(NavDestination.addCustomer),
+          onTap: () => ShellScope.of(context).openAddCustomer(),
           borderRadius: BorderRadius.circular(10),
           child: Container(
-            padding: EdgeInsets.symmetric(horizontal: wide ? 22 : 14, vertical: 14),
+            padding: EdgeInsets.symmetric(
+              horizontal: wide ? 22 : 14,
+              vertical: 14,
+            ),
             decoration: BoxDecoration(
               gradient: AppColors.darkGradient,
               borderRadius: BorderRadius.circular(10),
@@ -249,9 +268,9 @@ class _CustomersScreenState extends State<CustomersScreen> {
 
   Widget _searchField(AppPalette p) {
     OutlineInputBorder border(Color c, [double w = 1.2]) => OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: c, width: w),
-        );
+      borderRadius: BorderRadius.circular(10),
+      borderSide: BorderSide(color: c, width: w),
+    );
     return SizedBox(
       width: 270,
       height: 46,
@@ -315,8 +334,13 @@ class _CustomersScreenState extends State<CustomersScreen> {
     final end = math.min(page * _pageSize, total);
     final bold = TextStyle(fontWeight: FontWeight.w700, color: p.textPrimary);
 
-    Widget pageButton(String label, IconData icon, bool enabled, bool prev,
-        VoidCallback onTap) {
+    Widget pageButton(
+      String label,
+      IconData icon,
+      bool enabled,
+      bool prev,
+      VoidCallback onTap,
+    ) {
       final fg = enabled ? p.textPrimary : p.textMuted;
       final iconW = Icon(icon, size: 18, color: fg);
       final text = Text(
@@ -369,8 +393,13 @@ class _CustomersScreenState extends State<CustomersScreen> {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              pageButton('Previous', Icons.chevron_left, page > 1, true,
-                  () => setState(() => _page = page - 1)),
+              pageButton(
+                'Previous',
+                Icons.chevron_left,
+                page > 1,
+                true,
+                () => setState(() => _page = page - 1),
+              ),
               const SizedBox(width: 14),
               Text(
                 'Page $page of $totalPages',
@@ -381,8 +410,13 @@ class _CustomersScreenState extends State<CustomersScreen> {
                 ),
               ),
               const SizedBox(width: 14),
-              pageButton('Next', Icons.chevron_right, page < totalPages, false,
-                  () => setState(() => _page = page + 1)),
+              pageButton(
+                'Next',
+                Icons.chevron_right,
+                page < totalPages,
+                false,
+                () => setState(() => _page = page + 1),
+              ),
             ],
           ),
         ],

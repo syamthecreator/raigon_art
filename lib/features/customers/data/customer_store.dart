@@ -3,8 +3,6 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:raigon_art/features/customers/data/customer_mock.dart';
 
-/// In-memory customer list shared by the Customers screen and the Add dialog.
-/// Replace with your API / repository later.
 class CustomerStore {
   CustomerStore._();
 

@@ -7,9 +7,9 @@ import 'package:raigon_art/core/constants/asset_constants.dart';
 import 'package:raigon_art/core/theme/app_colors.dart';
 import 'package:raigon_art/core/widgets/app_snackbar.dart';
 import 'package:raigon_art/features/authentication/presentation/widgets/auth_widget.dart';
-import 'package:raigon_art/features/authentication/services/auth_service.dart';
-
-enum AuthStep { signIn, forgot, otp, newPassword }
+import 'package:provider/provider.dart';
+import 'package:raigon_art/features/authentication/models/auth_model.dart';
+import 'package:raigon_art/features/authentication/providers/auth_provider.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -19,13 +19,9 @@ class AuthScreen extends StatefulWidget {
 }
 
 class _AuthScreenState extends State<AuthScreen> {
-  static const int _resendSeconds = 120;
-
-  AuthStep _step = AuthStep.signIn;
-
   final _usernameCtrl = TextEditingController(text: 'admin');
   final _passwordCtrl = TextEditingController(text: 'admin123');
-  final _phoneCtrl = TextEditingController(text: AuthService.registeredPhone);
+  final _phoneCtrl = TextEditingController();
   final _otpCtrl = TextEditingController(text: '1234');
   final _newPassCtrl = TextEditingController(text: '1234567890');
   final _confirmPassCtrl = TextEditingController(text: '1234567890');
@@ -33,14 +29,15 @@ class _AuthScreenState extends State<AuthScreen> {
   bool _hidePassword = true;
   bool _hideNewPass = true;
   bool _hideConfirmPass = true;
-  bool _loading = false;
 
-  Timer? _timer;
-  int _secondsLeft = 0;
+  @override
+  void initState() {
+    super.initState();
+    _phoneCtrl.text = AuthModel.registeredPhone;
+  }
 
   @override
   void dispose() {
-    _timer?.cancel();
     _usernameCtrl.dispose();
     _passwordCtrl.dispose();
     _phoneCtrl.dispose();
@@ -50,21 +47,12 @@ class _AuthScreenState extends State<AuthScreen> {
     super.dispose();
   }
 
-
-  void _goTo(AuthStep step) => setState(() => _step = step);
-
-  void _backToSignIn() {
-    _timer?.cancel();
-    _otpCtrl.text = AuthService.mockOtp;
-    _newPassCtrl.clear();
-    _confirmPassCtrl.clear();
-    _passwordCtrl.clear();
-    _goTo(AuthStep.signIn);
-  }
+  AuthProvider get _auth => context.read<AuthProvider>();
 
   Future<void> _signIn() async {
     final user = _usernameCtrl.text.trim();
     final pass = _passwordCtrl.text;
+
     if (user.isEmpty) {
       AppSnackBar.error(context, 'Enter your phone number or username.');
       return;
@@ -73,96 +61,89 @@ class _AuthScreenState extends State<AuthScreen> {
       AppSnackBar.error(context, 'Enter your password.');
       return;
     }
-    setState(() => _loading = true);
-    final ok = await AuthService.signIn(user, pass);
+
+    final ok = await _auth.signIn(user, pass);
     if (!mounted) return;
-    setState(() => _loading = false);
+
     if (ok) {
       AppSnackBar.success(context, 'Welcome to Raigon Arts Management System!');
       Navigator.pushReplacementNamed(context, AppRouter.dashboard);
     } else {
-      AppSnackBar.error(context, 'Invalid username or password.');
+      AppSnackBar.error(
+        context,
+        _auth.errorMessage ?? 'Invalid username or password.',
+      );
     }
   }
 
   Future<void> _sendOtp() async {
-    setState(() => _loading = true);
-
-    final ok = await AuthService.sendWhatsAppOtp(_phoneCtrl.text);
-
+    final ok = await _auth.sendOtp(_phoneCtrl.text);
     if (!mounted) return;
 
-    setState(() => _loading = false);
-
     if (!ok) {
-      AppSnackBar.error(context, 'Could not send OTP. Try again.');
+      AppSnackBar.error(
+        context,
+        _auth.errorMessage ?? 'Could not send OTP. Try again.',
+      );
       return;
     }
 
-    _otpCtrl.text = AuthService.mockOtp;
-
-    _startTimer();
-    _goTo(AuthStep.otp);
+    _otpCtrl.text = _auth.mockOtp;
 
     AppSnackBar.success(
       context,
       '💬 WhatsApp OTP sent to ${_phoneCtrl.text}! '
-      'Verification Code: ${AuthService.mockOtp}',
+      'Verification Code: ${_auth.mockOtp}',
     );
   }
 
   Future<void> _resendOtp() async {
-    if (_secondsLeft > 0 || _loading) return;
-
-    final ok = await AuthService.sendWhatsAppOtp(_phoneCtrl.text);
-
+    final ok = await _auth.resendOtp(_phoneCtrl.text);
     if (!mounted) return;
 
     if (ok) {
-      _otpCtrl.text = AuthService.mockOtp;
-
-      _startTimer();
-
+      _otpCtrl.text = _auth.mockOtp;
       AppSnackBar.success(
         context,
         '💬 WhatsApp OTP resent to ${_phoneCtrl.text}! '
-        'Verification Code: ${AuthService.mockOtp}',
+        'Verification Code: ${_auth.mockOtp}',
       );
-    } else {
-      AppSnackBar.error(context, 'Could not resend OTP. Try again.');
+    } else if (_auth.errorMessage != null) {
+      AppSnackBar.error(context, _auth.errorMessage!);
     }
   }
 
   Future<void> _verifyOtp() async {
     final otp = _otpCtrl.text.trim();
+
     if (otp.length != 4) {
       AppSnackBar.error(context, 'Enter the 4-digit code.');
       return;
     }
-    setState(() => _loading = true);
-    final ok = await AuthService.verifyOtp(_phoneCtrl.text, otp);
-    if (!mounted) return;
-    setState(() => _loading = false);
-    if (ok) {
-      _timer?.cancel();
 
+    final ok = await _auth.verifyOtp(_phoneCtrl.text, otp);
+    if (!mounted) return;
+
+    if (ok) {
       _newPassCtrl.text = '1234567890';
       _confirmPassCtrl.text = '1234567890';
-
-      _goTo(AuthStep.newPassword);
 
       AppSnackBar.success(
         context,
         'OTP Verified Successfully! Please create your new password.',
       );
     } else {
-      AppSnackBar.error(context, 'Invalid OTP. Please try again.');
+      AppSnackBar.error(
+        context,
+        _auth.errorMessage ?? 'Invalid OTP. Please try again.',
+      );
     }
   }
 
   Future<void> _savePassword() async {
     final pass = _newPassCtrl.text;
     final confirm = _confirmPassCtrl.text;
+
     if (pass.length < 6) {
       AppSnackBar.error(context, 'Password must be at least 6 characters.');
       return;
@@ -171,41 +152,40 @@ class _AuthScreenState extends State<AuthScreen> {
       AppSnackBar.error(context, 'Passwords do not match.');
       return;
     }
-    setState(() => _loading = true);
-    final ok = await AuthService.resetPassword(_phoneCtrl.text, pass);
+
+    final ok = await _auth.resetPassword(_phoneCtrl.text, pass);
     if (!mounted) return;
-    setState(() => _loading = false);
+
     if (ok) {
-      _backToSignIn();
+      _auth.backToSignIn();
       AppSnackBar.success(context, 'Password updated. Please sign in.');
     } else {
-      AppSnackBar.error(context, 'Could not update password. Try again.');
+      AppSnackBar.error(
+        context,
+        _auth.errorMessage ?? 'Could not update password. Try again.',
+      );
     }
   }
 
-  void _startTimer() {
-    _timer?.cancel();
-    setState(() => _secondsLeft = _resendSeconds);
-    _timer = Timer.periodic(const Duration(seconds: 1), (t) {
-      if (!mounted) return;
-      if (_secondsLeft <= 1) {
-        t.cancel();
-        setState(() => _secondsLeft = 0);
-      } else {
-        setState(() => _secondsLeft--);
-      }
-    });
+  void _backToSignIn() {
+    _otpCtrl.text = _auth.mockOtp;
+    _newPassCtrl.clear();
+    _confirmPassCtrl.clear();
+    _passwordCtrl.clear();
+    _auth.backToSignIn();
   }
 
-  String get _timeText {
-    final m = (_secondsLeft ~/ 60).toString().padLeft(2, '0');
-    final s = (_secondsLeft % 60).toString().padLeft(2, '0');
-    return '$m:$s';
-  }
-
+  void _goTo(AuthStep step) => _auth.goTo(step);
 
   @override
   Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) => AuthProvider(),
+      child: _buildAuthScreen(),
+    );
+  }
+
+  Widget _buildAuthScreen() {
     return Scaffold(
       resizeToAvoidBottomInset: true,
       body: AuthBackground(
@@ -263,8 +243,8 @@ class _AuthScreenState extends State<AuthScreen> {
           duration: const Duration(milliseconds: 220),
           switchInCurve: Curves.easeOut,
           child: KeyedSubtree(
-            key: ValueKey(_step),
-            child: switch (_step) {
+            key: ValueKey(context.watch<AuthProvider>().step),
+            child: switch (context.watch<AuthProvider>().step) {
               AuthStep.signIn => _signInContent(),
               AuthStep.forgot => _forgotContent(),
               AuthStep.otp => _otpContent(),
@@ -279,13 +259,13 @@ class _AuthScreenState extends State<AuthScreen> {
   Widget _eyeButton(bool hidden, VoidCallback onTap) => IconButton(
     onPressed: onTap,
     splashRadius: 18,
+
     icon: Icon(
       hidden ? Icons.visibility : Icons.visibility_off,
       size: 20,
       color: AppColors.fieldIcon,
     ),
   );
-
 
   Widget _signInContent() {
     return Column(
@@ -331,7 +311,7 @@ class _AuthScreenState extends State<AuthScreen> {
           icon: Icons.login,
           iconAfter: true,
           gradient: AppColors.darkGradient,
-          loading: _loading,
+          loading: context.watch<AuthProvider>().isLoading,
           loadingLabel: 'Signing in...',
           onPressed: _signIn,
         ),
@@ -350,7 +330,9 @@ class _AuthScreenState extends State<AuthScreen> {
           title: 'Forgot Password?',
           subtitle: 'OTP will be sent to your database registered phone.',
         ),
+
         const SizedBox(height: 40),
+
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -365,6 +347,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 ),
               ),
             ),
+
             Container(
               margin: const EdgeInsets.only(bottom: 6),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
@@ -383,23 +366,28 @@ class _AuthScreenState extends State<AuthScreen> {
             ),
           ],
         ),
+
         AuthTextField(
           controller: _phoneCtrl,
           prefixIcon: Icons.smartphone,
           iconColor: AppColors.green,
           readOnly: true,
         ),
+
         const SizedBox(height: 14),
+
         AuthButton(
           label: 'Send OTP to Saved Number',
           icon: Icons.chat_bubble_outline,
           gradient: AppColors.greenGradient,
           shadowColor: AppColors.green,
-          loading: _loading,
+          loading: context.watch<AuthProvider>().isLoading,
           loadingLabel: 'Sending OTP via WhatsApp...',
           onPressed: _sendOtp,
         ),
+
         const SizedBox(height: 18),
+
         Center(
           child: AuthTextLink(
             label: 'Back to Sign In',
@@ -412,7 +400,9 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   Widget _otpContent() {
-    final canResend = _secondsLeft == 0;
+    final auth = context.watch<AuthProvider>();
+    final canResend = auth.canResend;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -433,8 +423,11 @@ class _AuthScreenState extends State<AuthScreen> {
             ],
           ),
         ),
+
         const SizedBox(height: 36),
+
         const AuthFieldLabel('4-Digit Verification Code *'),
+
         AuthTextField(
           controller: _otpCtrl,
           prefixIcon: Icons.vpn_key,
@@ -446,7 +439,9 @@ class _AuthScreenState extends State<AuthScreen> {
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           onSubmitted: (_) => _verifyOtp(),
         ),
+
         const SizedBox(height: 14),
+
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
@@ -454,6 +449,7 @@ class _AuthScreenState extends State<AuthScreen> {
             borderRadius: BorderRadius.circular(10),
             border: Border.all(color: AppColors.fieldBorder),
           ),
+
           child: Row(
             children: [
               const Icon(
@@ -461,24 +457,29 @@ class _AuthScreenState extends State<AuthScreen> {
                 size: 18,
                 color: AppColors.textPrimary,
               ),
+
               const SizedBox(width: 8),
+
               Text.rich(
                 TextSpan(
                   text: 'Resend code in ',
                   children: [
                     TextSpan(
-                      text: _timeText,
+                      text: auth.timeText,
                       style: const TextStyle(color: AppColors.gold),
                     ),
                   ],
                 ),
+
                 style: const TextStyle(
                   fontSize: 13.5,
                   fontWeight: FontWeight.w500,
                   color: AppColors.textPrimary,
                 ),
               ),
+
               const Spacer(),
+
               InkWell(
                 onTap: canResend ? _resendOtp : null,
                 child: Row(
@@ -490,7 +491,9 @@ class _AuthScreenState extends State<AuthScreen> {
                           ? AppColors.textPrimary
                           : AppColors.textMuted,
                     ),
+
                     const SizedBox(width: 4),
+
                     Text(
                       'Resend OTP',
                       style: TextStyle(
@@ -507,16 +510,20 @@ class _AuthScreenState extends State<AuthScreen> {
             ],
           ),
         ),
+
         const SizedBox(height: 28),
+
         AuthButton(
           label: 'Verify OTP & Continue',
           icon: Icons.check_circle,
           gradient: AppColors.darkGradient,
-          loading: _loading,
+          loading: context.watch<AuthProvider>().isLoading,
           loadingLabel: 'Verifying...',
           onPressed: _verifyOtp,
         ),
+
         const SizedBox(height: 18),
+
         Center(
           child: AuthTextLink(
             label: 'Back to Sign In',
@@ -553,8 +560,11 @@ class _AuthScreenState extends State<AuthScreen> {
             () => setState(() => _hideNewPass = !_hideNewPass),
           ),
         ),
+
         const SizedBox(height: 10),
+
         const AuthFieldLabel('Confirm New Password *'),
+
         AuthTextField(
           controller: _confirmPassCtrl,
           prefixIcon: Icons.lock,
@@ -564,20 +574,25 @@ class _AuthScreenState extends State<AuthScreen> {
           onSubmitted: (_) => _savePassword(),
           suffix: _eyeButton(
             _hideConfirmPass,
+
             () => setState(() => _hideConfirmPass = !_hideConfirmPass),
           ),
         ),
+
         const SizedBox(height: 14),
+
         AuthButton(
           label: 'Save New Password & Sign In',
           icon: Icons.save,
           gradient: AppColors.greenSolidGradient,
           shadowColor: AppColors.green,
-          loading: _loading,
+          loading: context.watch<AuthProvider>().isLoading,
           loadingLabel: 'Saving...',
           onPressed: _savePassword,
         ),
+
         const SizedBox(height: 18),
+
         Center(
           child: AuthTextLink(
             label: 'Back to Sign In',
@@ -597,6 +612,7 @@ class _LogoPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       color: AppColors.gold,
+
       child: Image.asset(
         AssetConstants.raigonLogo,
         fit: BoxFit.cover,

@@ -1,13 +1,10 @@
+import 'package:raigon_art/features/authentication/models/auth_model.dart';
+
 class AuthService {
   AuthService._();
 
   static const String _mockUsername = 'admin';
   static const String _mockPassword = 'admin123';
-  static const String _mockOtp = '1234';
-
-  static const String registeredPhone = '+91 9876543210';
-
-  static String get mockOtp => _mockOtp;
 
   static Future<bool> signIn(String usernameOrPhone, String password) async {
     await Future<void>.delayed(const Duration(milliseconds: 900));
@@ -19,18 +16,21 @@ class AuthService {
   static Future<bool> sendWhatsAppOtp(String phone) async {
     await Future<void>.delayed(const Duration(seconds: 2));
 
-    return true;
+    //Replace with backend/WhatsApp API.
+    return phone.trim().isNotEmpty;
   }
 
   static Future<bool> verifyOtp(String phone, String otp) async {
     await Future<void>.delayed(const Duration(milliseconds: 800));
 
-    return otp == _mockOtp;
+    // Replace with server-side OTP verification.
+    return otp == AuthModel.mockOtp;
   }
 
   static Future<bool> resetPassword(String phone, String newPassword) async {
     await Future<void>.delayed(const Duration(milliseconds: 900));
 
-    return true;
+    // Replace with backend/Firebase password update.
+    return phone.trim().isNotEmpty && newPassword.isNotEmpty;
   }
 }

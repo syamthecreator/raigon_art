@@ -9,6 +9,10 @@ import 'package:raigon_art/core/widgets/notification_mock.dart';
 import 'package:raigon_art/core/widgets/notification_panel.dart';
 import 'package:raigon_art/features/customers/presentation/screens/customers_screen.dart';
 import 'package:raigon_art/features/dashboard/presentation/screens/dashboard_screen.dart';
+import 'package:raigon_art/features/frame_sizes/presentation/screens/frame_sizes_screen.dart';
+import 'package:raigon_art/features/orders/presentation/screens/orders_screen.dart';
+import 'package:raigon_art/features/photo_collection/presentation/screens/photo_collection_screen.dart';
+import 'package:raigon_art/features/settings/presentation/screens/settings_screen.dart';
 import 'package:raigon_art/features/shell/presentation/shell_scope.dart';
 
 class AppShell extends StatefulWidget {
@@ -45,6 +49,10 @@ class _AppShellState extends State<AppShell> {
   Widget _page() => switch (_current) {
     NavDestination.dashboard => const DashboardScreen(),
     NavDestination.customers => const CustomersScreen(),
+    NavDestination.orders => const OrdersScreen(),
+    NavDestination.photoCollection => const PhotoCollectionScreen(),
+    NavDestination.frameSizes => const FrameSizesScreen(),
+    NavDestination.settings => const SettingsScreen(),
     _ => _PlaceholderScreen(title: _current.label),
   };
 

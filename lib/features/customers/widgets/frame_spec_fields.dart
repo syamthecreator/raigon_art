@@ -73,6 +73,19 @@ class FrameSpecData {
     qty.dispose();
     notes.dispose();
   }
+
+  void loadSpec(FrameSpec s) {
+    size = s.size;
+    unit = s.unit;
+    type = s.frameType;
+    orientation = s.orientation;
+    width.text = s.customWidth;
+    height.text = s.customHeight;
+    material.text = s.material;
+    finish.text = s.finish;
+    qty.text = '${s.qty}';
+    notes.text = s.notes;
+  }
 }
 
 class FrameSpecFields extends StatelessWidget {

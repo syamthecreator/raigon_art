@@ -12,10 +12,10 @@ import 'package:raigon_art/core/widgets/app_snackbar.dart';
 import 'package:raigon_art/features/customers/data/customer_mock.dart';
 import 'package:raigon_art/features/customers/data/customer_store.dart';
 import 'package:raigon_art/features/customers/data/frame_spec.dart';
+import 'package:raigon_art/features/customers/widgets/customer_dialog_kit.dart';
 import 'package:raigon_art/features/customers/widgets/form_kit.dart';
 import 'package:raigon_art/features/customers/widgets/frame_spec_fields.dart';
 import 'package:raigon_art/features/dashboard/data/dashboard_mock.dart';
-
 
 Future<void> showAddCustomerDialog(BuildContext context) async {
   final result = await showGeneralDialog<Customer>(
@@ -43,6 +43,22 @@ Future<void> showAddCustomerDialog(BuildContext context) async {
   }
 }
 
+Future<void> showEditCustomerDialog(
+  BuildContext context,
+  Customer customer,
+) async {
+  final result = await showCustomerDialog<Customer>(
+    context,
+    label: 'Edit customer',
+    builder: (_) => AddCustomerDialog(existing: customer),
+  );
+  if (result == null) return;
+  CustomerStore.update(result);
+  if (context.mounted) {
+    AppSnackBar.success(context, 'Customer updated successfully.');
+  }
+}
+
 enum FrameMode { same, individual }
 
 class _FrameEntry {
@@ -52,7 +68,8 @@ class _FrameEntry {
 }
 
 class AddCustomerDialog extends StatefulWidget {
-  const AddCustomerDialog({super.key});
+  final Customer? existing;
+  const AddCustomerDialog({super.key, this.existing});
 
   @override
   State<AddCustomerDialog> createState() => _AddCustomerDialogState();
@@ -91,6 +108,72 @@ class _AddCustomerDialogState extends State<AddCustomerDialog> {
   String _orderStatus = 'In Progress';
 
   @override
+  void initState() {
+    super.initState();
+    final c = widget.existing;
+    if (c != null) _load(c);
+  }
+
+  void _load(Customer c) {
+    _name.text = c.name;
+    _phone.text = c.phone;
+    _alt.text = c.altPhone;
+    _city.text = c.city;
+    _address.text = c.address;
+    _pin.text = c.pincode;
+    _total.text = c.total > 0 ? '${c.total}' : '';
+    _advance.text = c.advance > 0 ? '${c.advance}' : '';
+    _balance.text = (c.total == 0 && c.advance == 0)
+        ? ''
+        : '${math.max(0, c.balance)}';
+    _orderDate = DateUtils.dateOnly(c.orderDate);
+    _delivery = c.expectedDelivery;
+    _payment = c.paymentStatus;
+    _orderStatus = switch (c.status) {
+      OrderStatus.pending => 'Pending',
+      OrderStatus.completed => 'Completed',
+      OrderStatus.cancelled => 'Cancelled',
+      _ => 'In Progress',
+    };
+
+    final frames = c.effectiveFrames;
+    if (frames.length > 1) {
+      _mode = FrameMode.individual;
+      for (final f in frames) {
+        final b = f.photoBytes;
+        _entries.add(
+          _FrameEntry(
+            photo: b == null
+                ? null
+                : PickedPhoto(
+                    name: f.photoName ?? 'Photo',
+                    bytes: b,
+                    size: b.length,
+                  ),
+          )..spec.loadSpec(f),
+        );
+      }
+    } else {
+      for (var i = 0; i < c.photoBytes.length; i++) {
+        final b = c.photoBytes[i];
+        _photos.add(
+          PickedPhoto(
+            name: i < c.photoNames.length
+                ? c.photoNames[i]
+                : 'Photo_${i + 1}.jpg',
+            bytes: b,
+            size: b.length,
+          ),
+        );
+      }
+      _shared.loadSpec(frames.first);
+      if (c.frames.isEmpty) {
+        _shared.qty.text = c.photoCount > 1 ? '1' : '${c.qty}';
+      }
+    }
+  }
+
+  @override
   void dispose() {
     _scroll.dispose();
     for (final c in [
@@ -112,7 +195,6 @@ class _AddCustomerDialogState extends State<AddCustomerDialog> {
     }
     super.dispose();
   }
-
 
   Future<List<PickedPhoto>> _pick({bool multiple = true}) async {
     try {
@@ -245,7 +327,6 @@ class _AddCustomerDialogState extends State<AddCustomerDialog> {
     });
   }
 
-
   void _recalc() {
     final total = double.tryParse(_total.text) ?? 0;
     final adv = double.tryParse(_advance.text) ?? 0;
@@ -260,7 +341,6 @@ class _AddCustomerDialogState extends State<AddCustomerDialog> {
       }
     });
   }
-
 
   String _join(List<String> v) => v.isEmpty
       ? '—'
@@ -302,13 +382,14 @@ class _AddCustomerDialogState extends State<AddCustomerDialog> {
         : frames.fold<int>(0, (a, f) => a + f.qty);
 
     final customer = Customer(
-      id: CustomerStore.nextId(),
+      id: widget.existing?.id ?? CustomerStore.nextId(),
       name: name,
       city: _city.text.trim(),
       phone: phone,
       altPhone: _alt.text.trim(),
       address: _address.text.trim(),
       pincode: _pin.text.trim(),
+      photoNames: [for (final p in photos) p.name],
       photoCount: photos.length,
       photoBytes: [for (final p in photos) p.bytes],
       frameSize: _join([for (final f in frames) f.sizeLabel]),
@@ -329,7 +410,6 @@ class _AddCustomerDialogState extends State<AddCustomerDialog> {
     );
     Navigator.of(context).pop(customer);
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -396,7 +476,9 @@ class _AddCustomerDialogState extends State<AddCustomerDialog> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Add New Customer & Frame Order',
+                  widget.existing == null
+                      ? 'Add New Customer & Frame Order'
+                      : 'Edit Customer & Order (${widget.existing!.id})',
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w700,
@@ -640,7 +722,6 @@ class _AddCustomerDialogState extends State<AddCustomerDialog> {
     );
   }
 
-
   Widget _modeCard(
     FormColors c,
     FrameMode mode,
@@ -728,7 +809,6 @@ class _AddCustomerDialogState extends State<AddCustomerDialog> {
       ),
     );
   }
-
 
   Widget _sameContent(FormColors c) {
     final p = c.p;
@@ -879,7 +959,6 @@ class _AddCustomerDialogState extends State<AddCustomerDialog> {
       ],
     );
   }
-
 
   Widget _individualContent(FormColors c) {
     final p = c.p;
@@ -1111,7 +1190,6 @@ class _AddCustomerDialogState extends State<AddCustomerDialog> {
       ),
     );
   }
-
 
   Widget _footer(FormColors c) {
     final p = c.p;

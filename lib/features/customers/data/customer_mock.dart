@@ -25,6 +25,8 @@ class Customer {
     this.paymentStatus = 'Unpaid',
     this.frames = const [],
     this.photoBytes = const [],
+    this.photoNames = const [],
+    this.photoSizeLabels = const [],
   });
 
   final String id;
@@ -33,7 +35,7 @@ class Customer {
   final String phone;
   final String address;
   final int photoCount;
-
+  final List<String> photoNames;
   final List<String> photoUrls;
   final String frameSize;
   final String frameType;
@@ -48,8 +50,23 @@ class Customer {
   final String paymentStatus;
   final List<FrameSpec> frames;
   final List<Uint8List> photoBytes;
+  final List<String> photoSizeLabels;
   int get balance => total - advance;
   String get orderDateLabel => formatDate(orderDate);
+
+  List<FrameSpec> get effectiveFrames => frames.isNotEmpty
+      ? frames
+      : [
+          FrameSpec(
+            size: frameSize,
+            unit: 'Inch',
+            frameType: frameType,
+            material: 'Teak Wood Moulding',
+            finish: 'Walnut Brown',
+            orientation: 'Landscape (Horizontal)',
+            qty: qty,
+          ),
+        ];
 }
 
 const _months = [

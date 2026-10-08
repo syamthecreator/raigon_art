@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:raigon_art/core/theme/app_colors.dart';
 import 'package:raigon_art/core/theme/app_palette.dart';
+import 'package:raigon_art/features/customers/presentation/widgets/add_customer_dialog.dart';
+import 'package:raigon_art/features/customers/presentation/widgets/customer_delete_dialog.dart';
 import 'package:raigon_art/service/csv/csv_downloader.dart';
 import 'package:raigon_art/core/widgets/app_dropdown.dart';
 import 'package:raigon_art/core/widgets/app_snackbar.dart';
@@ -50,6 +52,15 @@ class _CustomersScreenState extends State<CustomersScreen> {
   StatusFilter _status = StatusFilter.all;
   SortOption _sort = SortOption.newest;
   int _page = 1;
+
+  Future<void> _edit(Customer c) => showEditCustomerDialog(context, c);
+
+  Future<void> _delete(Customer c) async {
+    final ok = await showDeleteCustomerDialog(context, c);
+    if (!ok || !mounted) return;
+    CustomerStore.remove(c.id);
+    AppSnackBar.success(context, 'Customer deleted successfully.');
+  }
 
   @override
   void initState() {
@@ -146,8 +157,8 @@ class _CustomersScreenState extends State<CustomersScreen> {
                       customers: pageItems,
                       onView: (c) {},
                       onWhatsApp: (c) {},
-                      onEdit: (c) {},
-                      onDelete: (c) {},
+                      onEdit: _edit,
+                      onDelete: _delete,
                     ),
                     _footer(p, all.length, page, totalPages),
                   ],

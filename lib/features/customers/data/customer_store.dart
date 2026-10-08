@@ -21,4 +21,14 @@ class CustomerStore {
     }
     return 'RA-${maxN + 1}';
   }
+
+  static void update(Customer customer) {
+    customers.value = [
+      for (final c in customers.value) c.id == customer.id ? customer : c,
+    ];
+  }
+
+  static void remove(String id) {
+    customers.value = customers.value.where((c) => c.id != id).toList();
+  }
 }

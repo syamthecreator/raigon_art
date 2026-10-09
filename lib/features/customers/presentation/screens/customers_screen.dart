@@ -6,6 +6,7 @@ import 'package:raigon_art/core/theme/app_colors.dart';
 import 'package:raigon_art/core/theme/app_palette.dart';
 import 'package:raigon_art/features/customers/presentation/widgets/add_customer_dialog.dart';
 import 'package:raigon_art/features/customers/presentation/widgets/customer_delete_dialog.dart';
+import 'package:raigon_art/features/customers/presentation/widgets/customer_view_dialog.dart';
 import 'package:raigon_art/service/csv/csv_downloader.dart';
 import 'package:raigon_art/core/widgets/app_dropdown.dart';
 import 'package:raigon_art/core/widgets/app_snackbar.dart';
@@ -155,7 +156,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
                     ),
                     CustomersTable(
                       customers: pageItems,
-                      onView: (c) {},
+                      onView: (c) => showViewCustomerDialog(context, c),
                       onWhatsApp: (c) {},
                       onEdit: _edit,
                       onDelete: _delete,

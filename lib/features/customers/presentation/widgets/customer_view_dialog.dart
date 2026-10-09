@@ -1,0 +1,1156 @@
+import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:raigon_art/core/constants/asset_constants.dart';
+import 'package:raigon_art/core/theme/app_colors.dart';
+import 'package:raigon_art/core/theme/app_palette.dart';
+import 'package:raigon_art/core/widgets/status_pill.dart';
+import 'package:raigon_art/features/customers/data/customer_mock.dart';
+import 'package:raigon_art/features/customers/data/frame_spec.dart';
+import 'package:raigon_art/features/customers/presentation/widgets/add_customer_dialog.dart';
+import 'package:raigon_art/features/customers/widgets/customer_dialog_kit.dart';
+import 'package:raigon_art/features/customers/widgets/form_kit.dart';
+
+enum _ViewAction { edit }
+
+/// Opens the read-only "Customer Order Profile & Summary" dialog.
+/// "Edit Customer & Order" closes it and opens the existing edit dialog.
+Future<void> showViewCustomerDialog(
+  BuildContext context,
+  Customer customer,
+) async {
+  final action = await showCustomerDialog<_ViewAction>(
+    context,
+    label: 'View customer',
+    builder: (_) => ViewCustomerDialog(customer: customer),
+  );
+  if (action == _ViewAction.edit && context.mounted) {
+    await showEditCustomerDialog(context, customer);
+  }
+}
+
+// ───────────────────────── Photo vault data ─────────────────────────
+
+class _VaultPhoto {
+  const _VaultPhoto({
+    required this.name,
+    required this.sizeLabel,
+    required this.image,
+  });
+  final String name;
+  final String sizeLabel;
+  final ImageProvider image;
+}
+
+/// Demo photos for the seeded mock customers (they carry no photo bytes).
+const Map<String, List<(String, String, String)>> _demoPhotos = {
+  'RA-1001': [
+    ('Family_Portrait_01.jpg', AssetConstants.d1, '3.4 MB'),
+    ('Vacation_Beach_02.jpg', AssetConstants.d2, '2.8 MB'),
+    ('Studio_Group_03.jpg', AssetConstants.d3, '4.1 MB'),
+    ('Heritage_Home_04.jpg', AssetConstants.d4, '3.0 MB'),
+    ('Anniversary_05.jpg', AssetConstants.d5, '2.9 MB'),
+  ],
+  'RA-1002': [
+    ('Bridal_Portrait.jpg', AssetConstants.d6, '3.2 MB'),
+    ('Nikah_Ceremony.jpg', AssetConstants.d7, '2.6 MB'),
+    ('Reception_Couple.jpg', AssetConstants.d8, '3.8 MB'),
+  ],
+  'RA-1003': [
+    ('Landscape_Monochrome.jpg', AssetConstants.d9, '4.4 MB'),
+    ('Architecture_Abstract.jpg', AssetConstants.d10, '3.6 MB'),
+  ],
+  'RA-1004': [
+    ('Oil_Painting_Scan.jpg', AssetConstants.d11, '5.1 MB'),
+    ('Artistic_Abstract.jpg', AssetConstants.d12, '4.7 MB'),
+  ],
+  'RA-1005': [('Baby_Memories.jpg', AssetConstants.d1, '2.5 MB')],
+};
+
+List<_VaultPhoto> _photosOf(Customer c) {
+  if (c.photoBytes.isNotEmpty) {
+    return [
+      for (var i = 0; i < c.photoBytes.length; i++)
+        _VaultPhoto(
+          name: i < c.photoNames.length
+              ? c.photoNames[i]
+              : 'Photo_${i + 1}.jpg',
+          sizeLabel: PickedPhoto(
+            name: '',
+            bytes: c.photoBytes[i],
+            size: c.photoBytes[i].length,
+          ).sizeLabel,
+          image: MemoryImage(c.photoBytes[i]),
+        ),
+    ];
+  }
+  final demo = _demoPhotos[c.id] ?? const [];
+  return [
+    for (final d in demo)
+      _VaultPhoto(name: d.$1, sizeLabel: d.$3, image: AssetImage(d.$2)),
+  ];
+}
+
+// ───────────────────────── Helpers ─────────────────────────
+
+String _inr(int v) {
+  final s = v.abs().toString();
+  String out;
+  if (s.length <= 3) {
+    out = s;
+  } else {
+    final last3 = s.substring(s.length - 3);
+    var rest = s.substring(0, s.length - 3);
+    final parts = <String>[];
+    while (rest.length > 2) {
+      parts.insert(0, rest.substring(rest.length - 2));
+      rest = rest.substring(0, rest.length - 2);
+    }
+    if (rest.isNotEmpty) parts.insert(0, rest);
+    out = '${parts.join(',')},$last3';
+  }
+  return '₹$out';
+}
+
+String _orDash(String s) => s.trim().isEmpty ? '—' : s.trim();
+
+String _shortOrientation(String o) {
+  final i = o.indexOf(' (');
+  return i == -1 ? o : o.substring(0, i);
+}
+
+String _paymentLabel(Customer c) {
+  if (c.paymentStatus != 'Unpaid') return c.paymentStatus;
+  if (c.advance <= 0) return 'Unpaid';
+  if (c.total > 0 && c.advance >= c.total) return 'Paid';
+  return 'Partial';
+}
+
+// ───────────────────────── Dialog ─────────────────────────
+
+class ViewCustomerDialog extends StatefulWidget {
+  const ViewCustomerDialog({super.key, required this.customer});
+  final Customer customer;
+
+  @override
+  State<ViewCustomerDialog> createState() => _ViewCustomerDialogState();
+}
+
+class _ViewCustomerDialogState extends State<ViewCustomerDialog> {
+  final _scroll = ScrollController();
+
+  static const _green = AppPalette.statusGreen;
+  static const _red = Color(0xFFE0605E);
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  Customer get _c => widget.customer;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = FormColors.of(context);
+    final p = c.p;
+    return DialogBackdrop(
+      maxWidth: 872,
+      child: Material(
+        color: c.modalBg,
+        elevation: 24,
+        shadowColor: Colors.black.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(24),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _header(p),
+            Divider(height: 1, color: p.border),
+            Flexible(child: _body(c)),
+            Divider(height: 1, color: p.border),
+            _footer(c),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ───────────── header ─────────────
+
+  Widget _header(AppPalette p) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(28, 22, 24, 20),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              gradient: AppColors.iconDarkGradient,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.badge, color: Colors.white, size: 22),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Customer Order Profile & Summary',
+                  style: TextStyle(
+                    fontSize: 21,
+                    fontWeight: FontWeight.w700,
+                    color: p.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Complete details and workshop framing specifications',
+                  style: TextStyle(fontSize: 13.5, color: p.textMuted),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          InkWell(
+            onTap: () => Navigator.of(context).pop(),
+            customBorder: const CircleBorder(),
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: p.chipFill,
+                shape: BoxShape.circle,
+                border: Border.all(color: p.isDark ? p.border : p.border),
+              ),
+              child: Icon(Icons.close, size: 21, color: p.textPrimary),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ───────────── body ─────────────
+
+  Widget _body(FormColors c) {
+    final p = c.p;
+    final frames = _c.effectiveFrames;
+    final photos = _photosOf(_c);
+    return ScrollbarTheme(
+      data: ScrollbarThemeData(
+        thumbColor: const WidgetStatePropertyAll(AppColors.gold),
+        thickness: const WidgetStatePropertyAll(6),
+        radius: const Radius.circular(3),
+      ),
+      child: Scrollbar(
+        controller: _scroll,
+        thumbVisibility: true,
+        child: SingleChildScrollView(
+          controller: _scroll,
+          padding: const EdgeInsets.fromLTRB(30, 26, 30, 28),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _profileCard(c),
+              const SizedBox(height: 21),
+              LayoutBuilder(
+                builder: (context, cons) {
+                  final contact = _contactCard(c);
+                  final summary = _summaryCard(c);
+                  if (cons.maxWidth < 640) {
+                    return Column(
+                      children: [contact, const SizedBox(height: 21), summary],
+                    );
+                  }
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: contact),
+                      const SizedBox(width: 21),
+                      Expanded(child: summary),
+                    ],
+                  );
+                },
+              ),
+              for (var i = 0; i < frames.length; i++) ...[
+                const SizedBox(height: 40),
+                _specCard(c, frames, i),
+              ],
+              const SizedBox(height: 40),
+              _vault(c, photos),
+              SizedBox(height: p.isDark ? 4 : 4),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ───────────── profile card ─────────────
+
+  Color _highlightBg(AppPalette p) =>
+      p.isDark ? const Color(0xFF383A66) : const Color(0xFFFBF8F1);
+
+  Widget _profileCard(FormColors c) {
+    final p = c.p;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(26, 22, 26, 22),
+      decoration: BoxDecoration(
+        color: _highlightBg(p),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: p.isDark ? const Color(0xFF4B4D7E) : p.border,
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              gradient: AppColors.iconDarkGradient,
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.22),
+                  blurRadius: 10,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: Text(
+              _c.name.isEmpty ? '?' : _c.name[0].toUpperCase(),
+              style: const TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+              ),
+            ),
+          ),
+          const SizedBox(width: 18),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _c.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: p.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 8,
+                  children: [
+                    _idChip(p),
+                    _infoChip(p, Icons.phone, _c.phone),
+                    _infoChip(p, Icons.calendar_today, _c.orderDateLabel),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          StatusPill(status: _c.status),
+        ],
+      ),
+    );
+  }
+
+  Widget _idChip(AppPalette p) {
+    final fg = p.isDark ? const Color(0xFF9C9BF5) : AppPalette.statusGold;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+      decoration: BoxDecoration(
+        color: p.isDark
+            ? const Color(0xFF4A4C86)
+            : AppColors.gold.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: p.isDark
+              ? const Color(0xFF5E60A0)
+              : AppColors.gold.withValues(alpha: 0.5),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.badge, size: 15, color: fg),
+          const SizedBox(width: 7),
+          Text(
+            'ID: ${_c.id}',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: fg,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _infoChip(AppPalette p, IconData icon, String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+      decoration: BoxDecoration(
+        color: p.isDark ? const Color(0xFF2A2C46) : p.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: p.isDark ? const Color(0xFF4A4C70) : p.border,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 15, color: p.textPrimary),
+          const SizedBox(width: 7),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: p.textPrimary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ───────────── contact + summary cards ─────────────
+
+  Widget _card(FormColors c, {required Widget child, EdgeInsets? padding}) {
+    final p = c.p;
+    return Container(
+      padding: padding ?? const EdgeInsets.fromLTRB(22, 22, 22, 18),
+      decoration: BoxDecoration(
+        color: p.isDark ? const Color(0xFF2E3050) : p.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: p.isDark ? const Color(0xFF45477A) : p.border,
+        ),
+      ),
+      child: child,
+    );
+  }
+
+  Widget _cardTitle(AppPalette p, IconData icon, String label) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: AppColors.gold),
+        const SizedBox(width: 10),
+        Flexible(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.6,
+              color: p.textPrimary,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _contactCard(FormColors c) {
+    final p = c.p;
+    final cityPin = [
+      _c.city.trim(),
+      _c.pincode.trim(),
+    ].where((s) => s.isNotEmpty).join(' - ');
+
+    final rows = <(String, String)>[
+      ('Primary Phone', _orDash(_c.phone)),
+      ('Alt Phone', _orDash(_c.altPhone)),
+      ('Delivery Address', _orDash(_c.address)),
+      ('City & Pincode', _orDash(cityPin)),
+    ];
+
+    return _card(
+      c,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _cardTitle(p, Icons.contact_page, 'CUSTOMER CONTACT INFO'),
+          const SizedBox(height: 14),
+          for (var i = 0; i < rows.length; i++) ...[
+            if (i > 0)
+              SizedBox(
+                height: 1,
+                child: CustomPaint(painter: DashedLinePainter(p.rowDivider)),
+              ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 13),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    rows[i].$1,
+                    style: TextStyle(fontSize: 15.5, color: p.textPrimary),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Text(
+                      rows[i].$2,
+                      textAlign: TextAlign.right,
+                      style: TextStyle(
+                        fontSize: 15.5,
+                        fontWeight: FontWeight.w600,
+                        color: p.textPrimary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _summaryCard(FormColors c) {
+    final p = c.p;
+    final balance = _c.balance < 0 ? 0 : _c.balance;
+
+    Widget tile({
+      required String label,
+      required String value,
+      Color? labelColor,
+      Color? valueColor,
+      required Color bg,
+      Color? border,
+      double valueSize = 24,
+    }) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: border ?? p.border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.0,
+                color: labelColor ?? p.textMuted,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: valueSize,
+                fontWeight: FontWeight.w800,
+                color: valueColor ?? p.textPrimary,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final neutral = p.isDark
+        ? const Color(0xFF222439)
+        : const Color(0xFFF5F3EE);
+    final neutralBorder = p.isDark
+        ? const Color(0xFF3A3C5A)
+        : const Color(0xFFEDEAE2);
+    final greenBg = Color.alphaBlend(
+      _green.withValues(alpha: p.isDark ? 0.32 : 0.16),
+      p.isDark ? const Color(0xFF2E3050) : p.surface,
+    );
+    final redBg = Color.alphaBlend(
+      _red.withValues(alpha: p.isDark ? 0.34 : 0.16),
+      p.isDark ? const Color(0xFF2E3050) : p.surface,
+    );
+
+    return _card(
+      c,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _cardTitle(p, Icons.request_quote, 'ORDER & PAYMENT SUMMARY'),
+          const SizedBox(height: 18),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: tile(
+                  label: 'TOTAL AMOUNT',
+                  value: _inr(_c.total),
+                  bg: neutral,
+                  border: neutralBorder,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: tile(
+                  label: 'ADVANCE PAID',
+                  value: _inr(_c.advance),
+                  labelColor: _green,
+                  valueColor: _green,
+                  bg: greenBg,
+                  border: _green.withValues(alpha: 0.45),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: tile(
+                    label: 'BALANCE DUE',
+                    value: _inr(balance),
+                    labelColor: _red,
+                    valueColor: _red,
+                    bg: redBg,
+                    border: _red.withValues(alpha: 0.5),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: tile(
+                    label: 'PAYMENT STATUS',
+                    value: _paymentLabel(_c),
+                    valueSize: 20,
+                    bg: neutral,
+                    border: neutralBorder,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ───────────── frame specifications ─────────────
+
+  Widget _specCard(FormColors c, List<FrameSpec> frames, int index) {
+    final p = c.p;
+    final f = frames[index];
+    final single = frames.length == 1;
+    final qty = single ? _c.qty : f.qty;
+    final title = single
+        ? 'FRAME WORKSHOP SPECIFICATIONS'
+        : 'PHOTO #${index + 1} FRAME SPECIFICATIONS';
+    final notes = f.notes.trim();
+
+    final specs = <(String, String)>[
+      ('FRAME SIZE', f.sizeLabel),
+      ('FRAME TYPE', f.frameType),
+      ('MATERIAL', f.material),
+      ('COLOR FINISH', f.finish),
+      ('ORIENTATION', _shortOrientation(f.orientation)),
+      ('QUANTITY', '$qty ${qty == 1 ? 'Frame' : 'Frames'}'),
+    ];
+
+    final tileBg = p.isDark ? const Color(0xFF2B2D4B) : p.surface;
+    final tileBorder = p.isDark ? const Color(0xFF45477A) : p.border;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: p.isDark ? const Color(0xFF383A66) : const Color(0xFFFCFAF4),
+          border: Border.all(
+            color: p.isDark ? const Color(0xFF4B4D7E) : p.border,
+          ),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(width: 4, color: AppColors.gold),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _cardTitle(p, Icons.straighten, title),
+                    const SizedBox(height: 16),
+                    LayoutBuilder(
+                      builder: (context, cons) {
+                        const gap = 16.0;
+                        final cols = cons.maxWidth >= 600
+                            ? 4
+                            : (cons.maxWidth >= 380 ? 2 : 1);
+                        final w = (cons.maxWidth - gap * (cols - 1)) / cols;
+                        return Wrap(
+                          spacing: gap,
+                          runSpacing: 14,
+                          children: [
+                            for (final s in specs)
+                              SizedBox(
+                                width: w,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 15,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: tileBg,
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(color: tileBorder),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        s.$1,
+                                        style: TextStyle(
+                                          fontSize: 12.5,
+                                          fontWeight: FontWeight.w700,
+                                          letterSpacing: 1.0,
+                                          color: p.textMuted,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 7),
+                                      Text(
+                                        _orDash(s.$2),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w700,
+                                          color: p.textPrimary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                          ],
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 14,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFDEFE0),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: p.isDark
+                              ? Colors.transparent
+                              : const Color(0xFFF7DFC4),
+                        ),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Padding(
+                            padding: EdgeInsets.only(top: 1),
+                            child: Icon(
+                              Icons.sticky_note_2,
+                              size: 20,
+                              color: Color(0xFFD27D2D),
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Special Instructions & Notes:',
+                                  style: TextStyle(
+                                    fontSize: 15.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFFC9722A),
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  notes.isEmpty
+                                      ? 'No special instructions provided.'
+                                      : notes,
+                                  style: const TextStyle(
+                                    fontSize: 15.5,
+                                    color: Color(0xFFC9722A),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ───────────── digital photo vault ─────────────
+
+  Widget _vault(FormColors c, List<_VaultPhoto> photos) {
+    final p = c.p;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _cardTitle(
+          p,
+          Icons.photo_library,
+          'DIGITAL PHOTO VAULT (${photos.length})',
+        ),
+        const SizedBox(height: 18),
+        if (photos.isEmpty)
+          Text(
+            'No photos uploaded for this order.',
+            style: TextStyle(fontSize: 14.5, color: p.textMuted),
+          )
+        else
+          LayoutBuilder(
+            builder: (context, cons) {
+              const gap = 21.0;
+              // One photo → full width. Two or more → two columns.
+              final cols = (photos.length == 1 || cons.maxWidth < 560) ? 1 : 2;
+              final w = (cons.maxWidth - gap * (cols - 1)) / cols;
+              return Wrap(
+                spacing: gap,
+                runSpacing: 20,
+                children: [
+                  for (var i = 0; i < photos.length; i++)
+                    SizedBox(
+                      width: w,
+                      child: _VaultCard(photo: photos[i], index: i),
+                    ),
+                ],
+              );
+            },
+          ),
+      ],
+    );
+  }
+
+  // ───────────────────────── footer ─────────────────────────
+
+  Widget _footer(FormColors c) {
+    final p = c.p;
+
+    return Container(
+      width: double.infinity,
+      color: c.footerBg,
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Edit Customer & Order
+          InkWell(
+            onTap: () => Navigator.of(context).pop(_ViewAction.edit),
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                gradient: AppColors.darkGradient,
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.gold.withValues(alpha: 0.22),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.edit_square, size: 16, color: Colors.white),
+                  SizedBox(width: 8),
+                  Text(
+                    'Edit Customer & Order',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(width: 10),
+
+          // Send WhatsApp Receipt
+          InkWell(
+            onTap: () {
+              // Open WhatsApp with the receipt message for _c.phone
+            },
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFF25D366),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  FaIcon(
+                    FontAwesomeIcons.whatsapp,
+                    size: 15,
+                    color: Colors.white,
+                  ),
+                  SizedBox(width: 8),
+                  Text(
+                    'Send WhatsApp Receipt',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(width: 10),
+
+          // Close
+          InkWell(
+            onTap: () => Navigator.of(context).pop(),
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: p.isDark
+                  ? BoxDecoration(
+                      color: p.chipFill,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: p.border),
+                    )
+                  : null,
+              child: Text(
+                'Close',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: p.textPrimary,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ───────────────────────── Vault card ─────────────────────────
+
+class _VaultCard extends StatefulWidget {
+  const _VaultCard({required this.photo, required this.index});
+  final _VaultPhoto photo;
+  final int index;
+
+  @override
+  State<_VaultCard> createState() => _VaultCardState();
+}
+
+class _VaultCardState extends State<_VaultCard> {
+  bool _hover = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
+    final photo = widget.photo;
+    final dark = p.isDark;
+
+    final nameColor = dark ? const Color(0xFF111118) : p.textPrimary;
+    final sizeColor = dark ? const Color(0xFF6E6E80) : p.textMuted;
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hover = true),
+      onExit: (_) => setState(() => _hover = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+        decoration: BoxDecoration(
+          color: dark ? null : const Color(0xFFFEFDFB),
+          gradient: dark
+              ? const LinearGradient(
+                  colors: [Color(0xFF74748A), Color(0xFFD3D3DE)],
+                )
+              : null,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: _hover
+                ? AppColors.gold
+                : (dark ? const Color(0xFF8D8776) : p.border),
+            width: _hover ? 1.6 : 1.2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: dark ? 0.2 : 0.05),
+              blurRadius: 14,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 76,
+              height: 76,
+              clipBehavior: Clip.antiAlias,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AppColors.gold.withValues(alpha: 0.7),
+                  width: 2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.15),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Image(image: photo.image, fit: BoxFit.cover),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    photo.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                      color: nameColor,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: dark
+                              ? AppColors.gold.withValues(alpha: 0.3)
+                              : const Color(0xFFF4F1EA),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.image,
+                              size: 14,
+                              color: dark ? AppColors.gold : p.textPrimary,
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              'Photo #${widget.index + 1}',
+                              style: TextStyle(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w600,
+                                color: dark ? AppColors.gold : p.textPrimary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Flexible(
+                        child: Text(
+                          photo.sizeLabel,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w500,
+                            color: sizeColor,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            // "View" is intentionally a no-op for now.
+            InkWell(
+              borderRadius: BorderRadius.circular(20),
+              onTap: () {},
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  gradient: AppColors.darkGradient,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.2),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.zoom_in, size: 18, color: Colors.white),
+                    SizedBox(width: 8),
+                    Text(
+                      'View',
+                      style: TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

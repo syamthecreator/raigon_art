@@ -411,7 +411,8 @@ class _RecentOrdersCard extends StatelessWidget {
                   child: Column(
                     children: [
                       _headerRow(p),
-                      for (final o in mockRecentOrders) _orderRow(p, o),
+                      for (final o in mockRecentOrders.reversed)
+                        _orderRow(context, p, o),
                     ],
                   ),
                 ),
@@ -445,7 +446,7 @@ class _RecentOrdersCard extends StatelessWidget {
     ),
   );
 
-  Widget _orderRow(AppPalette p, FrameOrder o) {
+  Widget _orderRow(BuildContext context, AppPalette p, FrameOrder o) {
     final cell = TextStyle(fontSize: 15, color: p.textPrimary);
     final bold = TextStyle(
       fontSize: 15,
@@ -540,7 +541,7 @@ class _RecentOrdersCard extends StatelessWidget {
             child: Row(
               children: [
                 InkWell(
-                  onTap: () {},
+                  onTap: () => ShellScope.of(context).openAddCustomer(),
                   child: Icon(Icons.visibility, size: 21, color: p.textPrimary),
                 ),
                 const SizedBox(width: 18),

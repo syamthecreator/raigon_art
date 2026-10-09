@@ -12,6 +12,7 @@ import 'package:raigon_art/features/dashboard/presentation/screens/dashboard_scr
 import 'package:raigon_art/features/frame_sizes/presentation/screens/frame_sizes_screen.dart';
 import 'package:raigon_art/features/orders/presentation/screens/orders_screen.dart';
 import 'package:raigon_art/features/photo_collection/presentation/screens/photo_collection_screen.dart';
+import 'package:raigon_art/features/reports/presentation/screens/reports_screen.dart';
 import 'package:raigon_art/features/settings/presentation/screens/settings_screen.dart';
 import 'package:raigon_art/features/shell/presentation/shell_scope.dart';
 
@@ -52,7 +53,10 @@ class _AppShellState extends State<AppShell> {
     NavDestination.orders => const OrdersScreen(),
     NavDestination.photoCollection => const PhotoCollectionScreen(),
     NavDestination.frameSizes => const FrameSizesScreen(),
+    NavDestination.reports => const ReportsScreen(),
     NavDestination.settings => const SettingsScreen(),
+
+    // ignore: unreachable_switch_case
     _ => _PlaceholderScreen(title: _current.label),
   };
 

@@ -9,9 +9,9 @@ import 'package:raigon_art/core/theme/app_colors.dart';
 import 'package:raigon_art/core/theme/app_palette.dart';
 import 'package:raigon_art/core/widgets/app_dropdown.dart';
 import 'package:raigon_art/core/widgets/app_snackbar.dart';
-import 'package:raigon_art/features/customers/data/customer_mock.dart';
+import 'package:raigon_art/features/customers/data/customer_model.dart';
 import 'package:raigon_art/features/customers/data/customer_store.dart';
-import 'package:raigon_art/features/dashboard/data/dashboard_mock.dart';
+import 'package:raigon_art/features/dashboard/models/order_status.dart';
 
 // ───────────────────────── Period data ─────────────────────────
 

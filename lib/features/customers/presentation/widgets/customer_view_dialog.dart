@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:raigon_art/core/constants/asset_constants.dart';
 import 'package:raigon_art/core/theme/app_colors.dart';
 import 'package:raigon_art/core/theme/app_palette.dart';
 import 'package:raigon_art/core/widgets/status_pill.dart';
-import 'package:raigon_art/features/customers/data/customer_mock.dart';
+import 'package:raigon_art/features/customers/data/customer_model.dart';
 import 'package:raigon_art/features/customers/data/frame_spec.dart';
 import 'package:raigon_art/features/customers/presentation/widgets/add_customer_dialog.dart';
 import 'package:raigon_art/features/customers/widgets/customer_dialog_kit.dart';
@@ -41,52 +40,19 @@ class _VaultPhoto {
   final ImageProvider image;
 }
 
-/// Demo photos for the seeded mock customers (they carry no photo bytes).
-const Map<String, List<(String, String, String)>> _demoPhotos = {
-  'RA-1001': [
-    ('Family_Portrait_01.jpg', AssetConstants.d1, '3.4 MB'),
-    ('Vacation_Beach_02.jpg', AssetConstants.d2, '2.8 MB'),
-    ('Studio_Group_03.jpg', AssetConstants.d3, '4.1 MB'),
-    ('Heritage_Home_04.jpg', AssetConstants.d4, '3.0 MB'),
-    ('Anniversary_05.jpg', AssetConstants.d5, '2.9 MB'),
-  ],
-  'RA-1002': [
-    ('Bridal_Portrait.jpg', AssetConstants.d6, '3.2 MB'),
-    ('Nikah_Ceremony.jpg', AssetConstants.d7, '2.6 MB'),
-    ('Reception_Couple.jpg', AssetConstants.d8, '3.8 MB'),
-  ],
-  'RA-1003': [
-    ('Landscape_Monochrome.jpg', AssetConstants.d9, '4.4 MB'),
-    ('Architecture_Abstract.jpg', AssetConstants.d10, '3.6 MB'),
-  ],
-  'RA-1004': [
-    ('Oil_Painting_Scan.jpg', AssetConstants.d11, '5.1 MB'),
-    ('Artistic_Abstract.jpg', AssetConstants.d12, '4.7 MB'),
-  ],
-  'RA-1005': [('Baby_Memories.jpg', AssetConstants.d1, '2.5 MB')],
-};
 
 List<_VaultPhoto> _photosOf(Customer c) {
-  if (c.photoBytes.isNotEmpty) {
-    return [
-      for (var i = 0; i < c.photoBytes.length; i++)
-        _VaultPhoto(
-          name: i < c.photoNames.length
-              ? c.photoNames[i]
-              : 'Photo_${i + 1}.jpg',
-          sizeLabel: PickedPhoto(
-            name: '',
-            bytes: c.photoBytes[i],
-            size: c.photoBytes[i].length,
-          ).sizeLabel,
-          image: MemoryImage(c.photoBytes[i]),
-        ),
-    ];
-  }
-  final demo = _demoPhotos[c.id] ?? const [];
   return [
-    for (final d in demo)
-      _VaultPhoto(name: d.$1, sizeLabel: d.$3, image: AssetImage(d.$2)),
+    for (var i = 0; i < c.photoBytes.length; i++)
+      _VaultPhoto(
+        name: i < c.photoNames.length ? c.photoNames[i] : 'Photo_${i + 1}.jpg',
+        sizeLabel: PickedPhoto(
+          name: '',
+          bytes: c.photoBytes[i],
+          size: c.photoBytes[i].length,
+        ).sizeLabel,
+        image: MemoryImage(c.photoBytes[i]),
+      ),
   ];
 }
 

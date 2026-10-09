@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:raigon_art/features/customers/data/customer_mock.dart';
+import 'package:raigon_art/features/customers/data/customer_model.dart';
 
 const _header = [
   'Customer ID',

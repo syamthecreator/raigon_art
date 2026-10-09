@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 class FrameSpec {
@@ -29,10 +30,41 @@ class FrameSpec {
   final String? photoName;
   final Uint8List? photoBytes;
 
-  String get sizeLabel =>
-      (customWidth.isNotEmpty && customHeight.isNotEmpty)
-          ? '$customWidth × $customHeight ${unit.toLowerCase()}'
-          : size;
+  String get sizeLabel => (customWidth.isNotEmpty && customHeight.isNotEmpty)
+      ? '$customWidth × $customHeight ${unit.toLowerCase()}'
+      : size;
+
+  Map<String, dynamic> toJson() => {
+        'size': size,
+        'unit': unit,
+        'customWidth': customWidth,
+        'customHeight': customHeight,
+        'frameType': frameType,
+        'material': material,
+        'finish': finish,
+        'orientation': orientation,
+        'qty': qty,
+        'notes': notes,
+        'photoName': photoName,
+        'photoBytes': photoBytes == null ? null : base64Encode(photoBytes!),
+      };
+
+  factory FrameSpec.fromJson(Map<String, dynamic> j) => FrameSpec(
+        size: j['size'] as String? ?? '',
+        unit: j['unit'] as String? ?? 'Inch',
+        customWidth: j['customWidth'] as String? ?? '',
+        customHeight: j['customHeight'] as String? ?? '',
+        frameType: j['frameType'] as String? ?? '',
+        material: j['material'] as String? ?? '',
+        finish: j['finish'] as String? ?? '',
+        orientation: j['orientation'] as String? ?? '',
+        qty: j['qty'] as int? ?? 1,
+        notes: j['notes'] as String? ?? '',
+        photoName: j['photoName'] as String?,
+        photoBytes: j['photoBytes'] == null
+            ? null
+            : base64Decode(j['photoBytes'] as String),
+      );
 }
 
 class PickedPhoto {

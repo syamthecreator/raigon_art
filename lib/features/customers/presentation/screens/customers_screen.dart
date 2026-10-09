@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:raigon_art/core/theme/app_colors.dart';
 import 'package:raigon_art/core/theme/app_palette.dart';
+import 'package:raigon_art/core/widgets/app_pagination_footer.dart';
 import 'package:raigon_art/features/customers/presentation/widgets/add_customer_dialog.dart';
 import 'package:raigon_art/features/customers/presentation/widgets/customer_delete_dialog.dart';
 import 'package:raigon_art/features/customers/presentation/widgets/customer_view_dialog.dart';
@@ -11,10 +12,10 @@ import 'package:raigon_art/service/csv/csv_downloader.dart';
 import 'package:raigon_art/core/widgets/app_dropdown.dart';
 import 'package:raigon_art/core/widgets/app_snackbar.dart';
 import 'package:raigon_art/features/customers/data/customer_csv.dart';
-import 'package:raigon_art/features/customers/data/customer_mock.dart';
+import 'package:raigon_art/features/customers/data/customer_model.dart';
 import 'package:raigon_art/features/customers/data/customer_store.dart';
 import 'package:raigon_art/features/customers/presentation/widgets/customers_table.dart';
-import 'package:raigon_art/features/dashboard/data/dashboard_mock.dart';
+import 'package:raigon_art/features/dashboard/models/order_status.dart';
 import 'package:raigon_art/features/shell/presentation/shell_scope.dart';
 
 enum StatusFilter {
@@ -161,7 +162,15 @@ class _CustomersScreenState extends State<CustomersScreen> {
                       onEdit: _edit,
                       onDelete: _delete,
                     ),
-                    _footer(p, all.length, page, totalPages),
+                    AppPaginationFooter(
+                      totalItems: all.length,
+                      page: page,
+                      pageSize: _pageSize,
+                      itemLabel: 'customers',
+                      onPageChanged: (newPage) {
+                        setState(() => _page = newPage);
+                      },
+                    ),
                   ],
                 ),
               ),
@@ -338,101 +347,6 @@ class _CustomersScreenState extends State<CustomersScreen> {
       spacing: 14,
       runSpacing: 14,
       children: [_searchField(p), status, sort],
-    );
-  }
-
-  Widget _footer(AppPalette p, int total, int page, int totalPages) {
-    final start = total == 0 ? 0 : (page - 1) * _pageSize + 1;
-    final end = math.min(page * _pageSize, total);
-    final bold = TextStyle(fontWeight: FontWeight.w700, color: p.textPrimary);
-
-    Widget pageButton(
-      String label,
-      IconData icon,
-      bool enabled,
-      bool prev,
-      VoidCallback onTap,
-    ) {
-      final fg = enabled ? p.textPrimary : p.textMuted;
-      final iconW = Icon(icon, size: 18, color: fg);
-      final text = Text(
-        label,
-        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: fg),
-      );
-      return InkWell(
-        onTap: enabled ? onTap : null,
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: p.surface,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: p.border),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: prev
-                ? [iconW, const SizedBox(width: 4), text]
-                : [text, const SizedBox(width: 4), iconW],
-          ),
-        ),
-      );
-    }
-
-    return Container(
-      decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: p.rowDivider)),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
-      child: Wrap(
-        alignment: WrapAlignment.spaceBetween,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        runSpacing: 12,
-        spacing: 16,
-        children: [
-          Text.rich(
-            TextSpan(
-              style: TextStyle(fontSize: 14.5, color: p.textMuted),
-              children: [
-                const TextSpan(text: 'Showing '),
-                TextSpan(text: '$start–$end', style: bold),
-                const TextSpan(text: ' of '),
-                TextSpan(text: '$total', style: bold),
-                const TextSpan(text: ' customers'),
-              ],
-            ),
-          ),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              pageButton(
-                'Previous',
-                Icons.chevron_left,
-                page > 1,
-                true,
-                () => setState(() => _page = page - 1),
-              ),
-              const SizedBox(width: 14),
-              Text(
-                'Page $page of $totalPages',
-                style: TextStyle(
-                  fontSize: 14.5,
-                  fontWeight: FontWeight.w600,
-                  color: p.textPrimary,
-                ),
-              ),
-              const SizedBox(width: 14),
-              pageButton(
-                'Next',
-                Icons.chevron_right,
-                page < totalPages,
-                false,
-                () => setState(() => _page = page + 1),
-              ),
-            ],
-          ),
-        ],
-      ),
     );
   }
 }

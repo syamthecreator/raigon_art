@@ -4,9 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:raigon_art/core/theme/app_colors.dart';
 import 'package:raigon_art/core/theme/app_palette.dart';
-import 'package:raigon_art/features/customers/data/customer_mock.dart';
+import 'package:raigon_art/core/widgets/app_pagination_footer.dart';
+import 'package:raigon_art/features/customers/data/customer_model.dart';
 import 'package:raigon_art/features/customers/data/customer_store.dart';
-import 'package:raigon_art/features/dashboard/data/dashboard_mock.dart';
+import 'package:raigon_art/features/customers/presentation/widgets/add_customer_dialog.dart';
+import 'package:raigon_art/features/customers/presentation/widgets/customer_view_dialog.dart';
+import 'package:raigon_art/features/dashboard/models/order_status.dart';
 import 'package:raigon_art/features/shell/presentation/shell_scope.dart';
 
 class OrdersScreen extends StatefulWidget {
@@ -20,6 +23,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
   // null = All
   OrderStatus? _filter;
   String _query = '';
+  static const int _pageSize = 10;
+
+  int _page = 1;
 
   /// Local status overrides made through the status dropdown.
   final Map<String, OrderStatus> _statusOverride = {};
@@ -125,11 +131,23 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
         final q = _query.trim().toLowerCase();
         final rows = all.where((c) {
-          if (_filter != null && _statusOf(c) != _filter) return false;
+          if (_filter != null && _statusOf(c) != _filter) {
+            return false;
+          }
+
           if (q.isEmpty) return true;
+
           return c.id.toLowerCase().contains(q) ||
               c.name.toLowerCase().contains(q);
         }).toList();
+
+        final totalPages = math.max(1, (rows.length / _pageSize).ceil());
+        final currentPage = _page.clamp(1, totalPages);
+
+        final pageRows = rows
+            .skip((currentPage - 1) * _pageSize)
+            .take(_pageSize)
+            .toList();
 
         return SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(24, 28, 24, 32),
@@ -150,7 +168,17 @@ class _OrdersScreenState extends State<OrdersScreen> {
                       padding: const EdgeInsets.all(20),
                       child: _searchField(p),
                     ),
-                    _table(p, rows),
+                    _table(p, pageRows),
+
+                    AppPaginationFooter(
+                      totalItems: rows.length,
+                      page: currentPage,
+                      pageSize: _pageSize,
+                      itemLabel: 'orders',
+                      onPageChanged: (newPage) {
+                        setState(() => _page = newPage);
+                      },
+                    ),
                   ],
                 ),
               ),
@@ -250,7 +278,12 @@ class _OrdersScreenState extends State<OrdersScreen> {
           children: [
             for (final (label, status) in items)
               InkWell(
-                onTap: () => setState(() => _filter = status),
+                onTap: () {
+                  setState(() {
+                    _filter = status;
+                    _page = 1;
+                  });
+                },
                 child: Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 18,
@@ -291,7 +324,12 @@ class _OrdersScreenState extends State<OrdersScreen> {
         width: 340,
         height: 44,
         child: TextField(
-          onChanged: (v) => setState(() => _query = v),
+          onChanged: (v) {
+            setState(() {
+              _query = v;
+              _page = 1;
+            });
+          },
           cursorColor: p.textPrimary,
           style: TextStyle(fontSize: 14.5, color: p.textPrimary),
           decoration: InputDecoration(
@@ -353,6 +391,8 @@ class _OrdersScreenState extends State<OrdersScreen> {
                           : _date(rows[i].expectedDelivery),
                       onStatus: (s) =>
                           setState(() => _statusOverride[rows[i].id] = s),
+                      onView: () => showViewCustomerDialog(context, rows[i]),
+                      onEdit: () => showEditCustomerDialog(context, rows[i]),
                     ),
               ],
             ),
@@ -406,6 +446,8 @@ class _OrderRow extends StatefulWidget {
     required this.totalLabel,
     required this.deliveryLabel,
     required this.onStatus,
+    required this.onView,
+    required this.onEdit,
   });
 
   final AppPalette p;
@@ -420,6 +462,8 @@ class _OrderRow extends StatefulWidget {
   final String totalLabel;
   final String deliveryLabel;
   final ValueChanged<OrderStatus> onStatus;
+  final VoidCallback onView;
+  final VoidCallback onEdit;
 
   @override
   State<_OrderRow> createState() => _OrderRowState();
@@ -567,10 +611,15 @@ class _OrderRowState extends State<_OrderRow> {
   Widget _actions() {
     final p = widget.p;
     const green = Color(0xFF25D366);
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _iconBtn(icon: Icons.visibility, color: p.textPrimary, onTap: () {}),
+        _iconBtn(
+          icon: Icons.visibility,
+          color: p.textPrimary,
+          onTap: widget.onView,
+        ),
         const SizedBox(width: 6),
         _iconBtn(
           icon: FontAwesomeIcons.whatsapp,
@@ -580,7 +629,7 @@ class _OrderRowState extends State<_OrderRow> {
           onTap: () {},
         ),
         const SizedBox(width: 6),
-        _iconBtn(icon: Icons.edit, color: p.textPrimary, onTap: () {}),
+        _iconBtn(icon: Icons.edit, color: p.textPrimary, onTap: widget.onEdit),
       ],
     );
   }

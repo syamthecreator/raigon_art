@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:raigon_art/features/customers/data/customer_mock.dart';
+import 'package:raigon_art/features/customers/data/customer_model.dart';
 import 'package:raigon_art/features/customers/widgets/customer_dialog_kit.dart';
 import 'package:raigon_art/features/customers/widgets/form_kit.dart';
 

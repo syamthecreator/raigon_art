@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:raigon_art/core/theme/app_palette.dart';
-import 'package:raigon_art/features/dashboard/data/dashboard_mock.dart';
+import 'package:raigon_art/features/dashboard/models/order_status.dart';
 
 extension OrderStatusX on OrderStatus {
   String get label => switch (this) {

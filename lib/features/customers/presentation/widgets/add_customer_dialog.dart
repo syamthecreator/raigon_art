@@ -9,13 +9,13 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:raigon_art/core/theme/app_colors.dart';
 import 'package:raigon_art/core/theme/app_palette.dart';
 import 'package:raigon_art/core/widgets/app_snackbar.dart';
-import 'package:raigon_art/features/customers/data/customer_mock.dart';
+import 'package:raigon_art/features/customers/data/customer_model.dart';
 import 'package:raigon_art/features/customers/data/customer_store.dart';
 import 'package:raigon_art/features/customers/data/frame_spec.dart';
 import 'package:raigon_art/features/customers/widgets/customer_dialog_kit.dart';
 import 'package:raigon_art/features/customers/widgets/form_kit.dart';
 import 'package:raigon_art/features/customers/widgets/frame_spec_fields.dart';
-import 'package:raigon_art/features/dashboard/data/dashboard_mock.dart';
+import 'package:raigon_art/features/dashboard/models/order_status.dart';
 
 Future<void> showAddCustomerDialog(BuildContext context) async {
   final result = await showGeneralDialog<Customer>(

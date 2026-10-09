@@ -7,30 +7,7 @@ import 'package:raigon_art/core/theme/app_colors.dart';
 import 'package:raigon_art/core/theme/app_palette.dart';
 import 'package:raigon_art/core/widgets/app_dropdown.dart';
 import 'package:raigon_art/core/widgets/app_snackbar.dart';
-
-// ───────────────────────── Model + mock data ─────────────────────────
-
-class FrameSize {
-  const FrameSize({
-    required this.code,
-    required this.name,
-    required this.width,
-    required this.height,
-    required this.unit,
-    required this.category,
-    this.orders = 0,
-    this.active = true,
-  });
-
-  final String code;
-  final String name;
-  final double width;
-  final double height;
-  final String unit; // 'Inch' | 'CM'
-  final String category;
-  final int orders;
-  final bool active;
-}
+import 'package:raigon_art/features/frame_sizes/data/frame_size_store.dart';
 
 const _units = ['Inch', 'CM'];
 const _categories = [
@@ -43,72 +20,6 @@ const _categories = [
 
 String _num(double v) => v % 1 == 0 ? v.toInt().toString() : v.toString();
 
-List<FrameSize> _seed() => const [
-  FrameSize(
-    code: 'FS-01',
-    name: '4 × 6 inch',
-    width: 4,
-    height: 6,
-    unit: 'Inch',
-    category: 'Standard Photo',
-    orders: 142,
-  ),
-  FrameSize(
-    code: 'FS-02',
-    name: '5 × 7 inch',
-    width: 5,
-    height: 7,
-    unit: 'Inch',
-    category: 'Standard Photo',
-    orders: 98,
-  ),
-  FrameSize(
-    code: 'FS-03',
-    name: '8 × 10 inch',
-    width: 8,
-    height: 10,
-    unit: 'Inch',
-    category: 'Medium Portrait',
-    orders: 210,
-  ),
-  FrameSize(
-    code: 'FS-04',
-    name: '8 × 12 inch',
-    width: 8,
-    height: 12,
-    unit: 'Inch',
-    category: 'Medium Portrait',
-    orders: 320,
-  ),
-  FrameSize(
-    code: 'FS-05',
-    name: '12 × 18 inch',
-    width: 12,
-    height: 18,
-    unit: 'Inch',
-    category: 'Large Gallery',
-    orders: 455,
-  ),
-  FrameSize(
-    code: 'FS-06',
-    name: '16 × 20 inch',
-    width: 16,
-    height: 20,
-    unit: 'Inch',
-    category: 'Large Gallery',
-    orders: 184,
-  ),
-  FrameSize(
-    code: 'FS-07',
-    name: '20 × 30 inch',
-    width: 20,
-    height: 30,
-    unit: 'Inch',
-    category: 'Exhibition Wall Art',
-    orders: 92,
-  ),
-];
-
 // ───────────────────────── Screen ─────────────────────────
 
 class FrameSizesScreen extends StatefulWidget {
@@ -119,7 +30,24 @@ class FrameSizesScreen extends StatefulWidget {
 }
 
 class _FrameSizesScreenState extends State<FrameSizesScreen> {
-  final List<FrameSize> _sizes = _seed();
+  @override
+  void initState() {
+    super.initState();
+
+    FrameSizeStore.sizes.addListener(_onSizesChanged);
+    FrameSizeStore.initialize();
+  }
+
+  void _onSizesChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    FrameSizeStore.sizes.removeListener(_onSizesChanged);
+    super.dispose();
+  }
+
   String _query = '';
 
   static const _flex = [13, 15, 10, 11, 19, 19, 17, 19, 10];
@@ -137,8 +65,8 @@ class _FrameSizesScreenState extends State<FrameSizesScreen> {
 
   List<FrameSize> get _filtered {
     final q = _query.trim().toLowerCase();
-    if (q.isEmpty) return _sizes;
-    return _sizes
+
+    final list = FrameSizeStore.sizes.value
         .where(
           (s) =>
               s.name.toLowerCase().contains(q) ||
@@ -146,69 +74,76 @@ class _FrameSizesScreenState extends State<FrameSizesScreen> {
               s.code.toLowerCase().contains(q),
         )
         .toList();
-  }
 
-  String _nextCode() {
-    var maxN = 0;
-    for (final s in _sizes) {
-      final m = RegExp(r'(\d+)$').firstMatch(s.code);
-      if (m != null) maxN = math.max(maxN, int.parse(m.group(1)!));
-    }
-    return 'FS-${(maxN + 1).toString().padLeft(2, '0')}';
+    return list;
   }
 
   Future<void> _add() async {
-    final r = await _showBlurDialog<FrameSize>(
+    await FrameSizeStore.initialize();
+
+    if (!mounted) return;
+
+    final result = await _showBlurDialog<FrameSize>(
       context,
       (_) => const _FrameSizeDialog(),
     );
-    if (r == null || !mounted) return;
-    setState(() {
-      _sizes.add(
-        FrameSize(
-          code: _nextCode(),
-          name: r.name,
-          width: r.width,
-          height: r.height,
-          unit: r.unit,
-          category: r.category,
-        ),
-      );
-    });
+
+    if (result == null || !mounted) return;
+
+    await FrameSizeStore.add(
+      FrameSize(
+        code: FrameSizeStore.nextCode(),
+        name: result.name,
+        width: result.width,
+        height: result.height,
+        unit: result.unit,
+        category: result.category,
+      ),
+    );
+
+    if (!mounted) return;
+
     AppSnackBar.success(context, 'Frame size added successfully.');
   }
 
-  Future<void> _edit(FrameSize s) async {
-    final r = await _showBlurDialog<FrameSize>(
+  Future<void> _edit(FrameSize size) async {
+    final result = await _showBlurDialog<FrameSize>(
       context,
-      (_) => _FrameSizeDialog(initial: s),
+      (_) => _FrameSizeDialog(initial: size),
     );
-    if (r == null || !mounted) return;
-    setState(() {
-      final i = _sizes.indexWhere((x) => x.code == s.code);
-      if (i != -1) {
-        _sizes[i] = FrameSize(
-          code: s.code,
-          name: r.name,
-          width: r.width,
-          height: r.height,
-          unit: r.unit,
-          category: r.category,
-          orders: s.orders,
-          active: s.active,
-        );
-      }
-    });
+
+    if (result == null || !mounted) return;
+
+    await FrameSizeStore.update(
+      FrameSize(
+        code: size.code,
+        name: result.name,
+        width: result.width,
+        height: result.height,
+        unit: result.unit,
+        category: result.category,
+        orders: size.orders,
+        active: size.active,
+      ),
+    );
+
+    if (!mounted) return;
+
     AppSnackBar.success(context, 'Frame size updated successfully.');
   }
 
-  Future<void> _delete(FrameSize s) async {
-    final ok = await _showBlurDialog<bool>(
+  Future<void> _delete(FrameSize size) async {
+    final confirmed = await _showBlurDialog<bool>(
       context,
-      (_) => _DeleteDialog(size: s),
+      (_) => _DeleteDialog(size: size),
     );
-    if (ok != true || !mounted) return;
-    setState(() => _sizes.removeWhere((x) => x.code == s.code));
+
+    if (confirmed != true || !mounted) return;
+
+    await FrameSizeStore.remove(size.code);
+
+    if (!mounted) return;
+
     AppSnackBar.success(context, 'Frame size deleted successfully.');
   }
 
@@ -278,7 +213,7 @@ class _FrameSizesScreenState extends State<FrameSizesScreen> {
                           style: TextStyle(fontSize: 14.5, color: p.textMuted),
                           children: [
                             TextSpan(
-                              text: '${_sizes.length}',
+                              text: '${FrameSizeStore.sizes.value.length}',
                               style: TextStyle(
                                 fontWeight: FontWeight.w700,
                                 color: p.textPrimary,

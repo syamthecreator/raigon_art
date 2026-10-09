@@ -16,8 +16,13 @@ import 'package:raigon_art/features/customers/widgets/customer_dialog_kit.dart';
 import 'package:raigon_art/features/customers/widgets/form_kit.dart';
 import 'package:raigon_art/features/customers/widgets/frame_spec_fields.dart';
 import 'package:raigon_art/features/dashboard/models/order_status.dart';
+import 'package:raigon_art/features/frame_sizes/data/frame_size_store.dart';
 
 Future<void> showAddCustomerDialog(BuildContext context) async {
+  await FrameSizeStore.initialize();
+
+  if (!context.mounted) return;
+
   final result = await showGeneralDialog<Customer>(
     context: context,
     barrierDismissible: false,
@@ -27,6 +32,7 @@ Future<void> showAddCustomerDialog(BuildContext context) async {
     pageBuilder: (_, _, _) => const AddCustomerDialog(),
     transitionBuilder: (_, anim, _, child) {
       final curved = CurvedAnimation(parent: anim, curve: Curves.easeOut);
+
       return FadeTransition(
         opacity: curved,
         child: ScaleTransition(
@@ -36,8 +42,11 @@ Future<void> showAddCustomerDialog(BuildContext context) async {
       );
     },
   );
+
   if (result == null) return;
+
   CustomerStore.add(result);
+
   if (context.mounted) {
     AppSnackBar.success(context, 'Customer & frame order saved successfully.');
   }

@@ -3,7 +3,6 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:raigon_art/core/theme/app_colors.dart';
 import 'package:raigon_art/core/theme/app_palette.dart';
-import 'package:raigon_art/core/widgets/app_pagination_footer.dart';
 import 'package:raigon_art/features/customers/data/customer_model.dart';
 import 'package:raigon_art/features/customers/data/customer_store.dart';
 import 'package:raigon_art/features/customers/presentation/widgets/add_customer_dialog.dart';
@@ -17,99 +16,110 @@ class DashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = AppPalette.of(context);
+
     return ValueListenableBuilder<List<Customer>>(
       valueListenable: CustomerStore.customers,
-      builder: (context, customers, _) => LayoutBuilder(
-        builder: (context, constraints) {
-          final wide = constraints.maxWidth >= 700;
-          return SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Dashboard Overview',
-                            style: TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.w700,
-                              color: p.textPrimary,
+      builder: (context, customers, _) {
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final wide = constraints.maxWidth >= 700;
+
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Dashboard header
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Dashboard Overview',
+                              style: TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.w700,
+                                color: p.textPrimary,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Welcome back, Raigon Arts Workshop Manager',
-                            style: TextStyle(
-                              fontSize: 15.5,
-                              color: p.textMuted,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    InkWell(
-                      onTap: () => ShellScope.of(context).openAddCustomer(),
-                      borderRadius: BorderRadius.circular(10),
-                      child: Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: wide ? 22 : 14,
-                          vertical: 14,
-                        ),
-                        decoration: BoxDecoration(
-                          gradient: AppColors.darkGradient,
-                          borderRadius: BorderRadius.circular(10),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.gold.withValues(alpha: 0.35),
-                              blurRadius: 14,
-                              offset: const Offset(0, 6),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Welcome back, Raigon Arts Workshop Manager',
+                              style: TextStyle(
+                                fontSize: 15.5,
+                                color: p.textMuted,
+                              ),
                             ),
                           ],
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.person_add,
-                              size: 20,
-                              color: Colors.white,
-                            ),
-                            if (wide) ...[
-                              const SizedBox(width: 10),
-                              const Text(
-                                'Add New Customer',
-                                style: TextStyle(
-                                  fontSize: 15.5,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.white,
-                                ),
+                      ),
+                      const SizedBox(width: 16),
+                      InkWell(
+                        onTap: () => ShellScope.of(context).openAddCustomer(),
+                        borderRadius: BorderRadius.circular(10),
+                        child: Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: wide ? 22 : 14,
+                            vertical: 14,
+                          ),
+                          decoration: BoxDecoration(
+                            gradient: AppColors.darkGradient,
+                            borderRadius: BorderRadius.circular(10),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.gold.withValues(alpha: 0.35),
+                                blurRadius: 14,
+                                offset: const Offset(0, 6),
                               ),
                             ],
-                          ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.person_add,
+                                size: 20,
+                                color: Colors.white,
+                              ),
+                              if (wide) ...[
+                                const SizedBox(width: 10),
+                                const Text(
+                                  'Add New Customer',
+                                  style: TextStyle(
+                                    fontSize: 15.5,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                _StatsGrid(
-                  width: constraints.maxWidth - 48,
-                  customers: customers,
-                ),
-                const SizedBox(height: 24),
-                _RecentOrdersCard(customers: customers),
-              ],
-            ),
-          );
-        },
-      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Dashboard statistics
+                  _StatsGrid(
+                    width: constraints.maxWidth - 48,
+                    customers: customers,
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Fill the remaining available height
+                  Expanded(child: _RecentOrdersCard(customers: customers)),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }
@@ -399,7 +409,7 @@ class _RecentOrdersCard extends StatefulWidget {
 
 class _RecentOrdersCardState extends State<_RecentOrdersCard> {
   static const int _pageSize = 5;
-  int _page = 1;
+  final int _page = 1;
 
   static String _inr(int v) => _StatsGrid._inr(v);
 
@@ -513,15 +523,15 @@ class _RecentOrdersCardState extends State<_RecentOrdersCard> {
               );
             },
           ),
-          AppPaginationFooter(
-            totalItems: widget.customers.length,
-            page: page,
-            pageSize: _pageSize,
-            itemLabel: 'orders',
-            onPageChanged: (newPage) {
-              setState(() => _page = newPage);
-            },
-          ),
+          // AppPaginationFooter(
+          //   totalItems: widget.customers.length,
+          //   page: page,
+          //   pageSize: _pageSize,
+          //   itemLabel: 'orders',
+          //   onPageChanged: (newPage) {
+          //     setState(() => _page = newPage);
+          //   },
+          // ),
         ],
       ),
     );

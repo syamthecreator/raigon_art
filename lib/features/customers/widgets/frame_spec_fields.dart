@@ -3,19 +3,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:raigon_art/features/customers/data/frame_spec.dart';
 import 'package:raigon_art/features/customers/widgets/form_kit.dart';
+import 'package:raigon_art/features/frame_sizes/data/frame_size_store.dart';
 
-const kFrameSizes = [
-  '4 × 6 inch',
-  '5 × 7 inch',
-  '8 × 10 inch',
-  '8 × 12 inch',
-  '12 × 18 inch',
-  '16 × 20 inch',
-  '20 × 24 inch',
-  '20 × 30 inch',
-  '24 × 36 inch',
-  '30 × 40 inch',
-];
 const kUnits = ['Inch', 'CM', 'MM'];
 const kFrameTypes = [
   'Wooden Frame',
@@ -39,7 +28,7 @@ class FrameSpecData {
       qty = TextEditingController(text: '1'),
       notes = TextEditingController();
 
-  String size = '12 × 18 inch';
+  String size = '';
   String unit = 'Inch';
   String type = 'Wooden Frame';
   String orientation = 'Landscape (Horizontal)';
@@ -101,116 +90,148 @@ class FrameSpecFields extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const gap = SizedBox(height: 18);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        FormRow(
+
+    return ValueListenableBuilder<List<FrameSize>>(
+      valueListenable: FrameSizeStore.sizes,
+      builder: (context, savedSizes, child) {
+        final activeSizes = savedSizes.where((size) => size.active).toList();
+        final availableSizes = List<FrameSize>.of(activeSizes);
+        final selectedExists = availableSizes.any(
+          (size) => size.name == data.size,
+        );
+        if (!selectedExists && data.size.trim().isNotEmpty) {
+          final oldSize = savedSizes.where((size) => size.name == data.size);
+
+          if (oldSize.isNotEmpty) {
+            availableSizes.add(oldSize.first);
+          }
+        }
+
+        final sizeNames = availableSizes.map((size) => size.name).toList();
+
+        final selectedSize = sizeNames.contains(data.size)
+            ? data.size
+            : (sizeNames.isNotEmpty ? sizeNames.first : null);
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            LabeledField(
-              label: 'Frame Size',
-              child: FormDropdown<String>(
-                value: data.size,
-                items: kFrameSizes,
-                labelOf: (s) => s,
-                onChanged: (v) {
-                  data.size = v;
-                  onChanged();
-                },
-              ),
+            FormRow(
+              children: [
+                LabeledField(
+                  label: 'Frame Size',
+                  child: sizeNames.isEmpty
+                      ? const InputDecorator(
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(),
+                          ),
+                          child: Text('No frame sizes available'),
+                        )
+                      : FormDropdown<String>(
+                          value: selectedSize!,
+                          items: sizeNames,
+                          labelOf: (size) => size,
+                          onChanged: (value) {
+                            data.size = value;
+                            onChanged();
+                          },
+                        ),
+                ),
+                LabeledField(
+                  label: 'Unit',
+                  child: FormDropdown<String>(
+                    value: data.unit,
+                    items: kUnits,
+                    labelOf: (unit) => unit,
+                    onChanged: (value) {
+                      data.unit = value;
+                      onChanged();
+                    },
+                  ),
+                ),
+              ],
             ),
+            gap,
+            FormRow(
+              children: [
+                LabeledField(
+                  label: 'Custom Width',
+                  child: NumberBox(
+                    controller: data.width,
+                    hint: 'Width (e.g. 12)',
+                    allowDecimal: true,
+                    dim: true,
+                  ),
+                ),
+                LabeledField(
+                  label: 'Custom Height',
+                  child: NumberBox(
+                    controller: data.height,
+                    hint: 'Height (e.g. 18)',
+                    allowDecimal: true,
+                    dim: true,
+                  ),
+                ),
+              ],
+            ),
+            gap,
+            FormRow(
+              children: [
+                LabeledField(
+                  label: 'Frame Type',
+                  child: FormDropdown<String>(
+                    value: data.type,
+                    items: kFrameTypes,
+                    labelOf: (value) => value,
+                    onChanged: (value) {
+                      data.type = value;
+                      onChanged();
+                    },
+                  ),
+                ),
+                LabeledField(
+                  label: 'Frame Material',
+                  child: AppTextBox(controller: data.material),
+                ),
+                LabeledField(
+                  label: 'Frame Color Finish',
+                  child: AppTextBox(controller: data.finish),
+                ),
+              ],
+            ),
+            gap,
+            FormRow(
+              children: [
+                LabeledField(
+                  label: 'Photo Orientation',
+                  child: FormDropdown<String>(
+                    value: data.orientation,
+                    items: kOrientations,
+                    labelOf: (value) => value,
+                    onChanged: (value) {
+                      data.orientation = value;
+                      onChanged();
+                    },
+                  ),
+                ),
+                LabeledField(
+                  label: 'Quantity',
+                  child: NumberBox(controller: data.qty, min: 1),
+                ),
+              ],
+            ),
+            gap,
             LabeledField(
-              label: 'Unit',
-              child: FormDropdown<String>(
-                value: data.unit,
-                items: kUnits,
-                labelOf: (s) => s,
-                onChanged: (v) {
-                  data.unit = v;
-                  onChanged();
-                },
+              label: 'Special Instructions / Mounting Notes',
+              child: AppTextBox(
+                controller: data.notes,
+                maxLines: 3,
+                hint: 'Glass type (Anti-glare, Clear), Matting board margin, mounting hooks...',
               ),
             ),
           ],
-        ),
-        gap,
-        FormRow(
-          children: [
-            LabeledField(
-              label: 'Custom Width',
-              child: NumberBox(
-                controller: data.width,
-                hint: 'Width (e.g. 12)',
-                allowDecimal: true,
-                dim: true,
-              ),
-            ),
-            LabeledField(
-              label: 'Custom Height',
-              child: NumberBox(
-                controller: data.height,
-                hint: 'Height (e.g. 18)',
-                allowDecimal: true,
-                dim: true,
-              ),
-            ),
-          ],
-        ),
-        gap,
-        FormRow(
-          children: [
-            LabeledField(
-              label: 'Frame Type',
-              child: FormDropdown<String>(
-                value: data.type,
-                items: kFrameTypes,
-                labelOf: (s) => s,
-                onChanged: (v) {
-                  data.type = v;
-                  onChanged();
-                },
-              ),
-            ),
-            LabeledField(
-              label: 'Frame Material',
-              child: AppTextBox(controller: data.material),
-            ),
-            LabeledField(
-              label: 'Frame Color Finish',
-              child: AppTextBox(controller: data.finish),
-            ),
-          ],
-        ),
-        gap,
-        FormRow(
-          children: [
-            LabeledField(
-              label: 'Photo Orientation',
-              child: FormDropdown<String>(
-                value: data.orientation,
-                items: kOrientations,
-                labelOf: (s) => s,
-                onChanged: (v) {
-                  data.orientation = v;
-                  onChanged();
-                },
-              ),
-            ),
-            LabeledField(
-              label: 'Quantity',
-              child: NumberBox(controller: data.qty, min: 1),
-            ),
-          ],
-        ),
-        gap,
-        LabeledField(
-          label: 'Special Instructions / Mounting Notes',
-          child: AppTextBox(
-            controller: data.notes,
-            maxLines: 3,
-            hint: 'Glass type (Anti-glare, Clear), Matting board margin, mounting hooks...',
-          ),
-        ),
-      ],
+        );
+      },
     );
   }
 }

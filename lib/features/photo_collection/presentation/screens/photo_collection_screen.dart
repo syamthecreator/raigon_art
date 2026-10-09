@@ -44,7 +44,6 @@ external JSPromise<JSString?> _refreshPhotoDirectory();
 @JS('restorePhotoDirectory')
 external JSPromise<JSString?> _restorePhotoDirectory();
 
-
 /// ---------------------------------------------------------------------------
 /// DEBUG LOGGING
 /// ---------------------------------------------------------------------------

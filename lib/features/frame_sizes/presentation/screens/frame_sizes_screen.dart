@@ -20,8 +20,6 @@ const _categories = [
 
 String _num(double v) => v % 1 == 0 ? v.toInt().toString() : v.toString();
 
-// ───────────────────────── Screen ─────────────────────────
-
 class FrameSizesScreen extends StatefulWidget {
   const FrameSizesScreen({super.key});
 
@@ -330,7 +328,6 @@ class _FrameSizesScreenState extends State<FrameSizesScreen> {
   }
 }
 
-// ───────────────────────── Row ─────────────────────────
 
 class _SizeRow extends StatefulWidget {
   const _SizeRow({

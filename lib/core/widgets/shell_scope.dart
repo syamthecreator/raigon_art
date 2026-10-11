@@ -45,9 +45,7 @@ class ShellScope extends InheritedWidget {
 
   static ShellScope of(BuildContext context) {
     final scope = context.dependOnInheritedWidgetOfExactType<ShellScope>();
-
     assert(scope != null, 'ShellScope not found in widget tree.');
-
     return scope!;
   }
 

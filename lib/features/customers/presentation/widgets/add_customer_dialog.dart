@@ -8,14 +8,15 @@ import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:raigon_art/core/theme/app_colors.dart';
 import 'package:raigon_art/core/theme/app_palette.dart';
+import 'package:raigon_art/core/widgets/app_primary_button.dart';
 import 'package:raigon_art/core/widgets/app_snackbar.dart';
-import 'package:raigon_art/features/customers/data/customer_model.dart';
+import 'package:raigon_art/features/customers/models/customer_model.dart';
 import 'package:raigon_art/features/customers/data/customer_store.dart';
-import 'package:raigon_art/features/customers/data/frame_spec.dart';
-import 'package:raigon_art/features/customers/widgets/customer_dialog_kit.dart';
-import 'package:raigon_art/features/customers/widgets/form_kit.dart';
-import 'package:raigon_art/features/customers/widgets/frame_spec_fields.dart';
-import 'package:raigon_art/features/dashboard/models/order_status.dart';
+import 'package:raigon_art/features/customers/models/frame_spec.dart';
+import 'package:raigon_art/core/widgets/customer_dialog_kit.dart';
+import 'package:raigon_art/core/widgets/form_kit.dart';
+import 'package:raigon_art/features/customers/presentation/widgets/frame_spec_fields.dart';
+import 'package:raigon_art/core/models/status.dart';
 import 'package:raigon_art/features/frame_sizes/data/frame_size_store.dart';
 
 Future<void> showAddCustomerDialog(BuildContext context) async {
@@ -86,12 +87,6 @@ class AddCustomerDialog extends StatefulWidget {
 
 class _AddCustomerDialogState extends State<AddCustomerDialog> {
   static const _paymentOptions = ['Unpaid', 'Partial', 'Paid'];
-  static const _orderOptions = [
-    'Pending',
-    'In Progress',
-    'Completed',
-    'Cancelled',
-  ];
 
   final _scroll = ScrollController();
   final _name = TextEditingController();
@@ -103,18 +98,17 @@ class _AddCustomerDialogState extends State<AddCustomerDialog> {
   final _total = TextEditingController();
   final _advance = TextEditingController();
   final _balance = TextEditingController();
-
-  FrameMode _mode = FrameMode.same;
   final List<PickedPhoto> _photos = [];
   final FrameSpecData _shared = FrameSpecData();
   final List<_FrameEntry> _entries = [];
+  FrameMode _mode = FrameMode.same;
   bool _dragging = false;
 
   DateTime _orderDate = DateUtils.dateOnly(DateTime.now());
   DateTime? _delivery;
   String _payment = 'Unpaid';
   bool _paymentTouched = false;
-  String _orderStatus = 'In Progress';
+  Status _status = Status.inProgress;
 
   @override
   void initState() {
@@ -138,12 +132,7 @@ class _AddCustomerDialogState extends State<AddCustomerDialog> {
     _orderDate = DateUtils.dateOnly(c.orderDate);
     _delivery = c.expectedDelivery;
     _payment = c.paymentStatus;
-    _orderStatus = switch (c.status) {
-      OrderStatus.pending => 'Pending',
-      OrderStatus.completed => 'Completed',
-      OrderStatus.cancelled => 'Cancelled',
-      _ => 'In Progress',
-    };
+    _status = c.status;
 
     final frames = c.effectiveFrames;
     if (frames.length > 1) {
@@ -407,12 +396,7 @@ class _AddCustomerDialogState extends State<AddCustomerDialog> {
       total: total,
       advance: advance,
       paymentStatus: _payment,
-      status: switch (_orderStatus) {
-        'Pending' => OrderStatus.pending,
-        'Completed' => OrderStatus.completed,
-        'Cancelled' => OrderStatus.cancelled,
-        _ => OrderStatus.inProgress,
-      },
+      status: _status,
       orderDate: _orderDate,
       expectedDelivery: _delivery,
       frames: frames,
@@ -715,11 +699,13 @@ class _AddCustomerDialogState extends State<AddCustomerDialog> {
                   ),
                   LabeledField(
                     label: 'Order Status',
-                    child: FormDropdown<String>(
-                      value: _orderStatus,
-                      items: _orderOptions,
-                      labelOf: (s) => s,
-                      onChanged: (v) => setState(() => _orderStatus = v),
+                    child: FormDropdown<Status>(
+                      value: _status,
+                      items: Status.values,
+                      labelOf: (status) => status.label,
+                      onChanged: (value) {
+                        setState(() => _status = value);
+                      },
                     ),
                   ),
                 ],
@@ -1231,38 +1217,10 @@ class _AddCustomerDialogState extends State<AddCustomerDialog> {
             ),
           ),
           const SizedBox(width: 14),
-          InkWell(
-            onTap: _save,
-            borderRadius: BorderRadius.circular(10),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
-              decoration: BoxDecoration(
-                gradient: AppColors.darkGradient,
-                borderRadius: BorderRadius.circular(10),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.gold.withValues(alpha: 0.35),
-                    blurRadius: 14,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.check, size: 19, color: Colors.white),
-                  SizedBox(width: 10),
-                  Text(
-                    'Save Customer & Order',
-                    style: TextStyle(
-                      fontSize: 15.5,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          AppPrimaryButton(
+            label: 'Save Customer & Order',
+            icon: Icons.check,
+            onPressed: _save,
           ),
         ],
       ),

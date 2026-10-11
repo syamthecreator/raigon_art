@@ -92,7 +92,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
     AppSnackBar.success(
       context,
-      '💬 WhatsApp OTP sent to ${_phoneCtrl.text}! '
+      'WhatsApp OTP sent to ${_phoneCtrl.text}! '
       'Verification Code: ${_auth.mockOtp}',
     );
   }

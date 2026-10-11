@@ -114,12 +114,10 @@ class FrameSizeStore {
       } catch (e) {
         debugPrint('Could not load frame sizes: $e');
 
-        // Recover with defaults if stored data is invalid.
         sizes.value = List<FrameSize>.from(_defaultSizes);
         await _persist();
       }
     } else {
-      // Only use defaults when no saved data exists.
       sizes.value = List<FrameSize>.from(_defaultSizes);
       await _persist();
     }

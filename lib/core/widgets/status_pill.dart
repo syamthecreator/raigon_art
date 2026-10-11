@@ -1,30 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:raigon_art/core/theme/app_palette.dart';
-import 'package:raigon_art/features/dashboard/models/order_status.dart';
-
-extension OrderStatusX on OrderStatus {
-  String get label => switch (this) {
-        OrderStatus.inProgress => 'In Progress',
-        OrderStatus.completed => 'Completed',
-        OrderStatus.pending => 'Pending',
-        OrderStatus.cancelled => 'Cancelled',
-      };
-
-  Color get color => switch (this) {
-        OrderStatus.inProgress => AppPalette.statusGold,
-        OrderStatus.completed => AppPalette.statusGreen,
-        OrderStatus.pending => AppPalette.statusGold,
-        OrderStatus.cancelled => AppPalette.statusRed,
-      };
-}
+import 'package:raigon_art/core/models/status.dart';
 
 class StatusPill extends StatelessWidget {
   const StatusPill({super.key, required this.status});
-  final OrderStatus status;
+
+  final Status status;
 
   @override
   Widget build(BuildContext context) {
     final color = status.color;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
@@ -45,7 +30,10 @@ class StatusPill extends StatelessWidget {
             child: Container(
               width: 9,
               height: 9,
-              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+              decoration: BoxDecoration(
+                color: color,
+                shape: BoxShape.circle,
+              ),
             ),
           ),
           const SizedBox(width: 5),

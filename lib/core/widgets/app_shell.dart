@@ -14,7 +14,7 @@ import 'package:raigon_art/features/orders/presentation/screens/orders_screen.da
 import 'package:raigon_art/features/photo_collection/presentation/screens/photo_collection_screen.dart';
 import 'package:raigon_art/features/reports/presentation/screens/reports_screen.dart';
 import 'package:raigon_art/features/settings/presentation/screens/settings_screen.dart';
-import 'package:raigon_art/features/shell/presentation/shell_scope.dart';
+import 'package:raigon_art/core/widgets/shell_scope.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key});

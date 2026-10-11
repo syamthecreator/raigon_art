@@ -8,7 +8,6 @@ class AppSnackBar {
 
   static void success(BuildContext context, String message) =>
       _show(context, message, isError: false);
-
   static void error(BuildContext context, String message) =>
       _show(context, message, isError: true);
 

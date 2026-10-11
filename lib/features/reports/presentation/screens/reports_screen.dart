@@ -9,9 +9,9 @@ import 'package:raigon_art/core/theme/app_colors.dart';
 import 'package:raigon_art/core/theme/app_palette.dart';
 import 'package:raigon_art/core/widgets/app_dropdown.dart';
 import 'package:raigon_art/core/widgets/app_snackbar.dart';
-import 'package:raigon_art/features/customers/data/customer_model.dart';
+import 'package:raigon_art/features/customers/models/customer_model.dart';
 import 'package:raigon_art/features/customers/data/customer_store.dart';
-import 'package:raigon_art/features/dashboard/models/order_status.dart';
+import 'package:raigon_art/core/models/status.dart';
 
 // ───────────────────────── Period data ─────────────────────────
 
@@ -186,7 +186,7 @@ List<Customer> _activeOf(List<Customer> all) {
 }
 
 List<Customer> _archivedOf(List<Customer> all) {
-  final list = all.where((c) => c.status == OrderStatus.completed).toList();
+  final list = all.where((c) => c.status == Status.completed).toList();
   list.sort(
     (a, b) => _orderIndex(
       _archivedOrder,

@@ -2,7 +2,6 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 
-/// Same route/transition the Add dialog uses.
 Future<T?> showCustomerDialog<T>(
   BuildContext context, {
   required String label,
@@ -28,7 +27,6 @@ Future<T?> showCustomerDialog<T>(
   );
 }
 
-/// Blur + dim backdrop with the card centered (same as Add dialog).
 class DialogBackdrop extends StatelessWidget {
   const DialogBackdrop({
     super.key,

@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:raigon_art/features/customers/data/frame_spec.dart';
-import 'package:raigon_art/features/dashboard/models/order_status.dart';
+import 'package:raigon_art/features/customers/models/frame_spec.dart';
+import 'package:raigon_art/core/models/status.dart';
 
 class Customer {
   const Customer({
@@ -43,7 +43,7 @@ class Customer {
   final int qty;
   final int total;
   final int advance;
-  final OrderStatus status;
+  final Status status;
   final DateTime orderDate;
   final String altPhone;
   final String pincode;
@@ -122,9 +122,9 @@ class Customer {
       total: j['total'] as int? ?? 0,
       advance: j['advance'] as int? ?? 0,
       paymentStatus: j['paymentStatus'] as String? ?? 'Unpaid',
-      status: OrderStatus.values.firstWhere(
+      status: Status.values.firstWhere(
         (s) => s.name == j['status'],
-        orElse: () => OrderStatus.pending,
+        orElse: () => Status.pending,
       ),
       orderDate: DateTime.parse(j['orderDate'] as String),
       expectedDelivery: j['expectedDelivery'] == null
@@ -137,7 +137,7 @@ class Customer {
     );
   }
 
-  Customer copyWith({OrderStatus? status, String? paymentStatus}) => Customer(
+  Customer copyWith({Status? status, String? paymentStatus}) => Customer(
     id: id,
     name: name,
     city: city,

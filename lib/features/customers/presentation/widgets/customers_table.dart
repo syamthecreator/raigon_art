@@ -6,7 +6,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:raigon_art/core/theme/app_colors.dart';
 import 'package:raigon_art/core/theme/app_palette.dart';
 import 'package:raigon_art/core/widgets/status_pill.dart';
-import 'package:raigon_art/features/customers/data/customer_model.dart';
+import 'package:raigon_art/features/customers/models/customer_model.dart';
 
 class CustomersTable extends StatefulWidget {
   const CustomersTable({
@@ -47,6 +47,7 @@ class _CustomersTableState extends State<CustomersTable> {
   static const _w = <double>[120, 230, 150, 260, 220, 150, 160, 70, 170, 150];
   static const double _actionsMin = 200;
   static const double _hPad = 28;
+  int _hoveredIndex = -1;
 
   @override
   void dispose() {
@@ -58,71 +59,91 @@ class _CustomersTableState extends State<CustomersTable> {
   Widget build(BuildContext context) {
     final p = AppPalette.of(context);
     final fixed = _w.fold<double>(0, (a, b) => a + b);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final tableWidth =
-                math.max(constraints.maxWidth, fixed + _actionsMin + _hPad * 2);
-            return ScrollbarTheme(
-              data: ScrollbarThemeData(
-                thumbColor: const WidgetStatePropertyAll(AppColors.gold),
-                trackColor:
-                    WidgetStatePropertyAll(AppColors.gold.withValues(alpha: 0.12)),
-                thickness: const WidgetStatePropertyAll(6),
-                radius: const Radius.circular(3),
-              ),
-              child: Scrollbar(
-                controller: _scroll,
-                thumbVisibility: true,
-                trackVisibility: true,
-                child: SingleChildScrollView(
-                  controller: _scroll,
-                  scrollDirection: Axis.horizontal,
-                  child: SizedBox(
-                    width: tableWidth,
-                    child: Column(
-                      children: [
-                        _headerRow(p),
-                        for (var i = 0; i < widget.customers.length; i++)
-                          _row(p, widget.customers[i], i),
-                        const SizedBox(height: 10),
-                      ],
+
+    return Expanded(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final tableWidth = math.max(
+            constraints.maxWidth,
+            fixed + _actionsMin + _hPad * 2,
+          );
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: ScrollbarTheme(
+                  data: ScrollbarThemeData(
+                    thumbColor: const WidgetStatePropertyAll(AppColors.gold),
+                    trackColor: WidgetStatePropertyAll(
+                      AppColors.gold.withValues(alpha: 0.12),
+                    ),
+                    thickness: const WidgetStatePropertyAll(6),
+                    radius: const Radius.circular(3),
+                  ),
+                  child: Scrollbar(
+                    controller: _scroll,
+                    thumbVisibility: true,
+                    trackVisibility: true,
+                    child: SingleChildScrollView(
+                      controller: _scroll,
+                      scrollDirection: Axis.horizontal,
+                      child: SizedBox(
+                        width: tableWidth,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _headerRow(p),
+
+                            if (widget.customers.isNotEmpty)
+                              for (var i = 0; i < widget.customers.length; i++)
+                                _row(p, widget.customers[i], i)
+                            else
+                              Expanded(
+                                child: Center(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.folder_open,
+                                        size: 46,
+                                        color: p.textMuted,
+                                      ),
+                                      const SizedBox(height: 10),
+                                      Text(
+                                        'No customer records match '
+                                        'your filter criteria.',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          fontSize: 15,
+                                          color: p.textMuted,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ),
               ),
-            );
-          },
-        ),
-        if (widget.customers.isEmpty)
-          Container(
-            height: 200,
-            alignment: Alignment.center,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.folder_open, size: 46, color: p.textMuted),
-                const SizedBox(height: 10),
-                Text(
-                  'No customer records match your filter criteria.',
-                  style: TextStyle(fontSize: 15, color: p.textMuted),
-                ),
-              ],
-            ),
-          ),
-      ],
+            ],
+          );
+        },
+      ),
     );
   }
 
   Widget _cells(List<Widget> cells, Widget actions) => Row(
-        children: [
-          for (var i = 0; i < _w.length; i++)
-            SizedBox(width: _w[i], child: cells[i]),
-          Expanded(child: actions),
-        ],
-      );
+    children: [
+      for (var i = 0; i < _w.length; i++)
+        SizedBox(width: _w[i], child: cells[i]),
+      Expanded(child: actions),
+    ],
+  );
 
   Widget _headerRow(AppPalette p) {
     final style = TextStyle(
@@ -151,113 +172,149 @@ class _CustomersTableState extends State<CustomersTable> {
       fontWeight: FontWeight.w700,
       color: p.textPrimary,
     );
-    return Container(
-      decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: p.rowDivider)),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: _hPad, vertical: 16),
-      child: _cells(
-        [
-          Text(c.id, style: bold),
-          Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: p.avatarBg,
-                  shape: BoxShape.circle,
-                ),
-                child: Text(
-                  c.name[0],
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.gold,
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hoveredIndex = index),
+      onExit: (_) => setState(() => _hoveredIndex = -1),
+      child: Container(
+        decoration: BoxDecoration(
+          color: _hoveredIndex == index
+              ? (p.isDark
+                    ? Colors.white.withValues(alpha: 0.06)
+                    : const Color(0xFFFCFBF8))
+              : Colors.transparent,
+          border: Border(top: BorderSide(color: p.rowDivider)),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: _hPad, vertical: 16),
+        child: _cells(
+          [
+            Text(c.id, style: bold),
+
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: p.avatarBg,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Text(
+                    c.name.isNotEmpty ? c.name[0].toUpperCase() : '?',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.gold,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      c.name,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: p.textPrimary,
+                const SizedBox(width: 14),
+
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        c.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: p.textPrimary,
+                        ),
                       ),
-                    ),
-                    Text(
-                      c.city,
-                      style: TextStyle(fontSize: 13, color: p.textMuted),
-                    ),
-                  ],
+
+                      if (c.city.trim().isNotEmpty) ...[
+                        const SizedBox(height: 3),
+                        Text(
+                          c.city,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 13, color: p.textMuted),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
+              ],
+            ),
+
+            Text(c.phone, style: cell),
+            Padding(
+              padding: const EdgeInsets.only(right: 16),
+              child: Text(
+                c.address,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: cell,
               ),
-            ],
-          ),
-          Text(c.phone, style: cell),
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: Text(
-              c.address,
+            ),
+            PhotoStrip(
+              count: c.photoCount,
+              urls: c.photoUrls,
+              bytes: c.photoBytes,
+              seed: index,
+            ),
+            Text(
+              c.frameSize,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: cell,
             ),
-          ),
-          PhotoStrip(
-            count: c.photoCount,
-            urls: c.photoUrls,
-            bytes: c.photoBytes,
-            seed: index,
-          ),
-          Text(c.frameSize, maxLines: 1, overflow: TextOverflow.ellipsis, style: cell),
-          Text(c.frameType, maxLines: 1, overflow: TextOverflow.ellipsis, style: cell),
-          Text('${c.qty}', style: bold),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: StatusPill(status: c.status),
-          ),
-          Text(c.orderDateLabel, style: cell),
-        ],
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _action(
-              onTap: () => widget.onView?.call(c),
-              child: Icon(Icons.visibility, size: 21, color: p.textPrimary),
+            Text(
+              c.frameType,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: cell,
             ),
-            const SizedBox(width: 10),
-            _action(
-              onTap: () => widget.onWhatsApp?.call(c),
-              fill: AppColors.green.withValues(alpha: p.isDark ? 0.25 : 0.18),
-              child: const FaIcon(
-                FontAwesomeIcons.whatsapp,
-                size: 19,
-                color: AppColors.green,
-              ),
+            Text('${c.qty}', style: bold),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: StatusPill(status: c.status),
             ),
-            const SizedBox(width: 10),
-            _action(
-              onTap: () => widget.onEdit?.call(c),
-              child: Icon(Icons.edit_outlined, size: 20, color: p.textPrimary),
-            ),
-            const SizedBox(width: 10),
-            _action(
-              onTap: () => widget.onDelete?.call(c),
-              child: FaIcon(
-                FontAwesomeIcons.trash,
-                size: 17,
-                color: p.isDark ? p.textMuted : AppColors.black,
-              ),
-            ),
+            Text(c.orderDateLabel, style: cell),
           ],
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _action(
+                onTap: () => widget.onView?.call(c),
+                child: Icon(Icons.visibility, size: 21, color: p.textPrimary),
+              ),
+              const SizedBox(width: 10),
+              _action(
+                onTap: () => widget.onWhatsApp?.call(c),
+                fill: AppColors.green.withValues(alpha: p.isDark ? 0.25 : 0.18),
+                child: const FaIcon(
+                  FontAwesomeIcons.whatsapp,
+                  size: 19,
+                  color: AppColors.green,
+                ),
+              ),
+              const SizedBox(width: 10),
+              _action(
+                onTap: () => widget.onEdit?.call(c),
+                child: Icon(
+                  Icons.edit_outlined,
+                  size: 20,
+                  color: p.textPrimary,
+                ),
+              ),
+              const SizedBox(width: 10),
+              _action(
+                onTap: () => widget.onDelete?.call(c),
+                child: FaIcon(
+                  FontAwesomeIcons.trash,
+                  size: 17,
+                  color: p.isDark ? p.textMuted : AppColors.black,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -267,21 +324,20 @@ class _CustomersTableState extends State<CustomersTable> {
     required VoidCallback onTap,
     required Widget child,
     Color? fill,
-  }) =>
-      InkWell(
-        onTap: onTap,
+  }) => InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(8),
+    child: Container(
+      width: 36,
+      height: 36,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: fill,
         borderRadius: BorderRadius.circular(8),
-        child: Container(
-          width: 36,
-          height: 36,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: fill,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: child,
-        ),
-      );
+      ),
+      child: child,
+    ),
+  );
 }
 
 class PhotoStrip extends StatelessWidget {
@@ -311,17 +367,17 @@ class PhotoStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = AppPalette.of(context);
     if (count == 0) {
-      return Text('No photos', style: TextStyle(fontSize: 13, color: p.textMuted));
+      return Text(
+        'No photos',
+        style: TextStyle(fontSize: 13, color: p.textMuted),
+      );
     }
     final shown = math.min(count, 3);
     final extra = count - shown;
     return Row(
       children: [
         for (var i = 0; i < shown; i++)
-          Padding(
-            padding: const EdgeInsets.only(right: 4),
-            child: _thumb(i),
-          ),
+          Padding(padding: const EdgeInsets.only(right: 4), child: _thumb(i)),
         if (extra > 0)
           Container(
             width: 34,

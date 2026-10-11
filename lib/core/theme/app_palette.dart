@@ -111,15 +111,15 @@ class AppPalette {
       Theme.of(context).brightness == Brightness.dark ? dark : light;
 
   BoxDecoration card({double radius = 18}) => BoxDecoration(
-        color: surface,
-        borderRadius: BorderRadius.circular(radius),
-        border: Border.all(color: border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      );
+    color: surface,
+    borderRadius: BorderRadius.circular(radius),
+    border: Border.all(color: border),
+    boxShadow: [
+      BoxShadow(
+        color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
+        blurRadius: 20,
+        offset: const Offset(0, 8),
+      ),
+    ],
+  );
 }

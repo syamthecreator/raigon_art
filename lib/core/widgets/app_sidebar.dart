@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:raigon_art/core/constants/asset_constants.dart';
 import 'package:raigon_art/core/theme/app_colors.dart';
 import 'package:raigon_art/core/theme/app_palette.dart';
-import 'package:raigon_art/features/shell/presentation/shell_scope.dart';
+import 'package:raigon_art/core/widgets/shell_scope.dart';
 
 class AppSidebar extends StatelessWidget {
   const AppSidebar({

@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
-import 'package:raigon_art/features/customers/data/customer_model.dart';
+import 'package:raigon_art/features/customers/models/customer_model.dart';
 import 'package:raigon_art/features/customers/repository/customer_repository.dart';
 
 class CustomerStore {
@@ -12,8 +12,6 @@ class CustomerStore {
   static final ValueNotifier<List<Customer>> customers =
       ValueNotifier<List<Customer>>(const []);
 
-  /// Call once in main() before runApp().
-  /// Pass a different repository later (e.g. FirestoreCustomerRepository()).
   static Future<void> init([CustomerRepository? repository]) async {
     if (repository != null) _repo = repository;
     customers.value = await _repo.getAll();

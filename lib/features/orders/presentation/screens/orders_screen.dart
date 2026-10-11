@@ -5,12 +5,13 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:raigon_art/core/theme/app_colors.dart';
 import 'package:raigon_art/core/theme/app_palette.dart';
 import 'package:raigon_art/core/widgets/app_pagination_footer.dart';
-import 'package:raigon_art/features/customers/data/customer_model.dart';
+import 'package:raigon_art/core/widgets/app_primary_button.dart';
+import 'package:raigon_art/features/customers/models/customer_model.dart';
 import 'package:raigon_art/features/customers/data/customer_store.dart';
 import 'package:raigon_art/features/customers/presentation/widgets/add_customer_dialog.dart';
 import 'package:raigon_art/features/customers/presentation/widgets/customer_view_dialog.dart';
-import 'package:raigon_art/features/dashboard/models/order_status.dart';
-import 'package:raigon_art/features/shell/presentation/shell_scope.dart';
+import 'package:raigon_art/core/models/status.dart';
+import 'package:raigon_art/core/widgets/shell_scope.dart';
 
 class OrdersScreen extends StatefulWidget {
   const OrdersScreen({super.key});
@@ -21,14 +22,14 @@ class OrdersScreen extends StatefulWidget {
 
 class _OrdersScreenState extends State<OrdersScreen> {
   // null = All
-  OrderStatus? _filter;
+  Status? _filter;
   String _query = '';
   static const int _pageSize = 10;
 
   int _page = 1;
 
   /// Local status overrides made through the status dropdown.
-  final Map<String, OrderStatus> _statusOverride = {};
+  final Map<String, Status> _statusOverride = {};
 
   // Column flex values:
   // id, customer, phone, photos, specs, qty, total, payment, status, delivery, actions
@@ -59,7 +60,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
     'ACTIONS',
   ];
 
-  OrderStatus _statusOf(Customer c) => _statusOverride[c.id] ?? c.status;
+  Status _statusOf(Customer c) => _statusOverride[c.id] ?? c.status;
 
   static const _months = [
     'Jan',
@@ -80,18 +81,18 @@ class _OrdersScreenState extends State<OrdersScreen> {
       ? 'N/A'
       : '${_months[d.month - 1]} ${d.day.toString().padLeft(2, '0')}, ${d.year}';
 
-  Color _statusColor(OrderStatus s) => switch (s) {
-    OrderStatus.inProgress => AppPalette.statusGold,
-    OrderStatus.pending => AppPalette.orange,
-    OrderStatus.completed => AppPalette.statusGreen,
-    OrderStatus.cancelled => AppPalette.statusRed,
+  Color _statusColor(Status s) => switch (s) {
+    Status.inProgress => AppPalette.statusGold,
+    Status.pending => AppPalette.orange,
+    Status.completed => AppPalette.statusGreen,
+    Status.cancelled => AppPalette.statusRed,
   };
 
-  String _statusLabel(OrderStatus s) => switch (s) {
-    OrderStatus.inProgress => 'In Progress',
-    OrderStatus.pending => 'Pending',
-    OrderStatus.completed => 'Completed',
-    OrderStatus.cancelled => 'Cancelled',
+  String _statusLabel(Status s) => switch (s) {
+    Status.inProgress => 'In Progress',
+    Status.pending => 'Pending',
+    Status.completed => 'Completed',
+    Status.cancelled => 'Cancelled',
   };
 
   String _paymentOf(Customer c) {
@@ -126,7 +127,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
     return ValueListenableBuilder<List<Customer>>(
       valueListenable: CustomerStore.customers,
       builder: (context, all, _) {
-        int count(OrderStatus? s) =>
+        int count(Status? s) =>
             s == null ? all.length : all.where((c) => _statusOf(c) == s).length;
 
         final q = _query.trim().toLowerCase();
@@ -216,43 +217,10 @@ class _OrdersScreenState extends State<OrdersScreen> {
           ),
         ),
         const SizedBox(width: 16),
-        Material(
-          color: Colors.transparent,
-          child: Ink(
-            decoration: BoxDecoration(
-              gradient: AppColors.darkGradient,
-              borderRadius: BorderRadius.circular(10),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.2),
-                  blurRadius: 12,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-            ),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(10),
-              onTap: () => ShellScope.of(context).openAddCustomer(),
-              child: const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.person_add_alt_1, size: 20, color: Colors.white),
-                    SizedBox(width: 10),
-                    Text(
-                      'Add New Customer',
-                      style: TextStyle(
-                        fontSize: 15.5,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
+        AppPrimaryButton(
+          label: 'Add New Customer',
+          icon: Icons.person_add,
+          onPressed: () => ShellScope.of(context).openAddCustomer(),
         ),
       ],
     );
@@ -260,13 +228,13 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
   // ───────────────────────── Tabs ─────────────────────────
 
-  Widget _tabs(AppPalette p, int Function(OrderStatus?) count) {
-    final items = <(String, OrderStatus?)>[
+  Widget _tabs(AppPalette p, int Function(Status?) count) {
+    final items = <(String, Status?)>[
       ('All', null),
-      ('Pending', OrderStatus.pending),
-      ('In Progress', OrderStatus.inProgress),
-      ('Completed', OrderStatus.completed),
-      ('Cancelled', OrderStatus.cancelled),
+      ('Pending', Status.pending),
+      ('In Progress', Status.inProgress),
+      ('Completed', Status.completed),
+      ('Cancelled', Status.cancelled),
     ];
     return Container(
       decoration: BoxDecoration(
@@ -386,7 +354,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                       payment: _paymentOf(rows[i]),
                       paymentColor: _paymentColor,
                       totalLabel: _money(rows[i].total),
-                      deliveryLabel: _statusOf(rows[i]) == OrderStatus.cancelled
+                      deliveryLabel: _statusOf(rows[i]) == Status.cancelled
                           ? 'N/A'
                           : _date(rows[i].expectedDelivery),
                       onStatus: (s) =>
@@ -454,14 +422,14 @@ class _OrderRow extends StatefulWidget {
   final Customer customer;
   final bool isLast;
   final List<int> flex;
-  final OrderStatus status;
-  final Color Function(OrderStatus) statusColor;
-  final String Function(OrderStatus) statusLabel;
+  final Status status;
+  final Color Function(Status) statusColor;
+  final String Function(Status) statusLabel;
   final String payment;
   final Color Function(String) paymentColor;
   final String totalLabel;
   final String deliveryLabel;
-  final ValueChanged<OrderStatus> onStatus;
+  final ValueChanged<Status> onStatus;
   final VoidCallback onView;
   final VoidCallback onEdit;
 
@@ -560,13 +528,13 @@ class _OrderRowState extends State<_OrderRow> {
 
   Widget _statusDropdown() {
     final color = widget.statusColor(widget.status);
-    return PopupMenuButton<OrderStatus>(
+    return PopupMenuButton<Status>(
       tooltip: '',
       onSelected: widget.onStatus,
       offset: const Offset(0, 38),
       color: widget.p.surface,
       itemBuilder: (_) => [
-        for (final s in OrderStatus.values)
+        for (final s in Status.values)
           PopupMenuItem(
             value: s,
             child: Text(

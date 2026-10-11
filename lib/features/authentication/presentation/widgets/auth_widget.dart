@@ -12,11 +12,7 @@ class AuthBackground extends StatelessWidget {
       fit: StackFit.expand,
       children: [
         const DecoratedBox(decoration: BoxDecoration(color: AppColors.cream)),
-        Positioned(
-          left: -200,
-          top: -120,
-          child: _blob(AppColors.blush, 620),
-        ),
+        Positioned(left: -200, top: -120, child: _blob(AppColors.blush, 620)),
         Positioned(
           right: -240,
           bottom: -200,
@@ -29,15 +25,15 @@ class AuthBackground extends StatelessWidget {
   }
 
   Widget _blob(Color color, double size) => Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: RadialGradient(
-            colors: [color.withValues(alpha: 0.85), color.withValues(alpha: 0)],
-          ),
-        ),
-      );
+    width: size,
+    height: size,
+    decoration: BoxDecoration(
+      shape: BoxShape.circle,
+      gradient: RadialGradient(
+        colors: [color.withValues(alpha: 0.85), color.withValues(alpha: 0)],
+      ),
+    ),
+  );
 }
 
 class _GridPainter extends CustomPainter {
@@ -97,8 +93,9 @@ class AuthHeader extends StatelessWidget {
             borderRadius: BorderRadius.circular(14),
             boxShadow: [
               BoxShadow(
-                color: (green ? AppColors.green : AppColors.black)
-                    .withValues(alpha: 0.28),
+                color: (green ? AppColors.green : AppColors.black).withValues(
+                  alpha: 0.28,
+                ),
                 blurRadius: 16,
                 offset: const Offset(0, 8),
               ),
@@ -138,16 +135,16 @@ class AuthFieldLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: Text(
-          text,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: AppColors.textLabel,
-          ),
-        ),
-      );
+    padding: const EdgeInsets.only(bottom: 8),
+    child: Text(
+      text,
+      style: const TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+        color: AppColors.textLabel,
+      ),
+    ),
+  );
 }
 
 class AuthTextField extends StatefulWidget {
@@ -219,8 +216,8 @@ class _AuthTextFieldState extends State<AuthTextField> {
           color: widget.readOnly
               ? AppColors.fieldFillDisabled
               : focused
-                  ? AppColors.white
-                  : AppColors.fieldFill,
+              ? AppColors.white
+              : AppColors.fieldFill,
           borderRadius: BorderRadius.circular(13),
           border: Border.all(
             color: focused ? AppColors.gold : AppColors.fieldBorder,
@@ -258,7 +255,8 @@ class _AuthTextFieldState extends State<AuthTextField> {
             prefixIcon: Icon(
               widget.prefixIcon,
               size: 20,
-              color: widget.iconColor ??
+              color:
+                  widget.iconColor ??
                   (focused ? AppColors.black : AppColors.fieldIcon),
             ),
             suffixIcon: widget.suffix,

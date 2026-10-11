@@ -1,14 +1,16 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:raigon_art/core/models/status.dart';
 import 'package:raigon_art/core/theme/app_colors.dart';
 import 'package:raigon_art/core/theme/app_palette.dart';
-import 'package:raigon_art/features/customers/data/customer_model.dart';
+import 'package:raigon_art/core/widgets/app_primary_button.dart';
+import 'package:raigon_art/core/widgets/status_pill.dart';
+import 'package:raigon_art/features/customers/models/customer_model.dart';
 import 'package:raigon_art/features/customers/data/customer_store.dart';
 import 'package:raigon_art/features/customers/presentation/widgets/add_customer_dialog.dart';
 import 'package:raigon_art/features/customers/presentation/widgets/customer_view_dialog.dart';
-import 'package:raigon_art/features/shell/presentation/shell_scope.dart';
-import 'package:raigon_art/features/dashboard/models/order_status.dart';
+import 'package:raigon_art/core/widgets/shell_scope.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -22,14 +24,11 @@ class DashboardScreen extends StatelessWidget {
       builder: (context, customers, _) {
         return LayoutBuilder(
           builder: (context, constraints) {
-            final wide = constraints.maxWidth >= 700;
-
             return Padding(
               padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Dashboard header
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -57,63 +56,22 @@ class DashboardScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 16),
-                      InkWell(
-                        onTap: () => ShellScope.of(context).openAddCustomer(),
-                        borderRadius: BorderRadius.circular(10),
-                        child: Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: wide ? 22 : 14,
-                            vertical: 14,
-                          ),
-                          decoration: BoxDecoration(
-                            gradient: AppColors.darkGradient,
-                            borderRadius: BorderRadius.circular(10),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.gold.withValues(alpha: 0.35),
-                                blurRadius: 14,
-                                offset: const Offset(0, 6),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.person_add,
-                                size: 20,
-                                color: Colors.white,
-                              ),
-                              if (wide) ...[
-                                const SizedBox(width: 10),
-                                const Text(
-                                  'Add New Customer',
-                                  style: TextStyle(
-                                    fontSize: 15.5,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
+                      AppPrimaryButton(
+                        label: 'Add New Customer',
+                        icon: Icons.person_add,
+                        onPressed: () =>
+                            ShellScope.of(context).openAddCustomer(),
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 24),
-
-                  // Dashboard statistics
-                  _StatsGrid(
+                  _buildStatsGrid(
+                    context,
                     width: constraints.maxWidth - 48,
                     customers: customers,
                   ),
-
                   const SizedBox(height: 24),
-
-                  // Fill the remaining available height
-                  Expanded(child: _RecentOrdersCard(customers: customers)),
+                  Expanded(child: _buildRecentOrdersCard(context, customers)),
                 ],
               ),
             );
@@ -122,12 +80,6 @@ class DashboardScreen extends StatelessWidget {
       },
     );
   }
-}
-
-class _StatsGrid extends StatelessWidget {
-  const _StatsGrid({required this.width, required this.customers});
-  final double width;
-  final List<Customer> customers;
 
   static String _inr(int v) {
     final s = v.toString();
@@ -152,12 +104,16 @@ class _StatsGrid extends StatelessWidget {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildStatsGrid(
+    BuildContext context, {
+    required double width,
+    required List<Customer> customers,
+  }) {
     final p = AppPalette.of(context);
-
-    int count(OrderStatus s) => customers.where((c) => c.status == s).length;
-    final billable = customers.where((c) => c.status != OrderStatus.cancelled);
+    int count(Status s) => customers.where((c) => c.status == s).length;
+    final billable = customers
+        .where((c) => c.status != Status.cancelled)
+        .toList();
     final revenue = billable.fold<int>(0, (a, c) => a + c.total);
 
     final now = DateTime.now();
@@ -180,63 +136,77 @@ class _StatsGrid extends StatelessWidget {
     final ordersTrend = _trend(ordersNow, ordersPrev);
     final revTrend = _trend(revNow, revPrev);
 
-    final stats = <_StatData>[
-      _StatData(
-        'Total Frame Orders',
-        '${customers.length}',
-        Icons.move_to_inbox,
-        p.tileNeutral,
-        p.tileNeutralIcon,
-        ordersTrend.$1,
-        ordersTrend.$2,
-        'vs last month',
-        p.textPrimary,
-      ),
-      _StatData(
-        'In Progress',
-        '${count(OrderStatus.inProgress)}',
-        Icons.handyman,
-        p.tileTeal,
-        AppPalette.teal,
-        Icons.sync,
-        'Active',
-        'in workshop',
-        AppPalette.teal,
-      ),
-      _StatData(
-        'Completed Orders',
-        '${count(OrderStatus.completed)}',
-        Icons.check_circle,
-        p.tileGreen,
-        AppColors.green,
-        Icons.check,
-        'Ready',
-        'for delivery',
-        AppColors.green,
-      ),
-      _StatData(
-        'Pending Orders',
-        '${count(OrderStatus.pending)}',
-        Icons.watch_later,
-        p.tileOrange,
-        AppPalette.orange,
-        Icons.warning,
-        'Urgent',
-        'action needed',
-        AppPalette.orange,
-      ),
-      _StatData(
-        'Total Revenue',
-        _inr(revenue),
-        Icons.currency_rupee,
-        p.tileNeutral,
-        p.tileNeutralIcon,
-        revTrend.$1,
-        revTrend.$2,
-        'vs last month',
-        p.textPrimary,
-      ),
-    ];
+    final stats =
+        <
+          ({
+            String title,
+            String value,
+            IconData icon,
+            Color tileBg,
+            Color tileIcon,
+            IconData footIcon,
+            String footStrong,
+            String footLight,
+            Color footColor,
+          })
+        >[
+          (
+            title: 'Total Frame Orders',
+            value: '${customers.length}',
+            icon: Icons.move_to_inbox,
+            tileBg: p.tileNeutral,
+            tileIcon: p.tileNeutralIcon,
+            footIcon: ordersTrend.$1,
+            footStrong: ordersTrend.$2,
+            footLight: 'vs last month',
+            footColor: p.textPrimary,
+          ),
+          (
+            title: 'In Progress',
+            value: '${count(Status.inProgress)}',
+            icon: Icons.handyman,
+            tileBg: p.tileTeal,
+            tileIcon: AppPalette.teal,
+            footIcon: Icons.sync,
+            footStrong: 'Active',
+            footLight: 'in workshop',
+            footColor: AppPalette.teal,
+          ),
+          (
+            title: 'Completed Orders',
+            value: '${count(Status.completed)}',
+            icon: Icons.check_circle,
+            tileBg: p.tileGreen,
+            tileIcon: AppColors.green,
+            footIcon: Icons.check,
+            footStrong: 'Ready',
+            footLight: 'for delivery',
+            footColor: AppColors.green,
+          ),
+          (
+            title: 'Pending Orders',
+            value: '${count(Status.pending)}',
+            icon: Icons.watch_later,
+            tileBg: p.tileOrange,
+            tileIcon: AppPalette.orange,
+            footIcon: Icons.warning,
+            footStrong: 'Urgent',
+            footLight: 'action needed',
+            footColor: AppPalette.orange,
+          ),
+          (
+            title: 'Total Revenue',
+            value: _inr(revenue),
+            icon: Icons.currency_rupee,
+            tileBg: p.tileNeutral,
+            tileIcon: p.tileNeutralIcon,
+            footIcon: revTrend.$1,
+            footStrong: revTrend.$2,
+            footLight: 'vs last month',
+            footColor: p.textPrimary,
+          ),
+        ];
+
     const gap = 20.0;
     final cols = width >= 1100
         ? 5
@@ -246,6 +216,7 @@ class _StatsGrid extends StatelessWidget {
         ? 2
         : 1;
     final cardWidth = (width - gap * (cols - 1)) / cols;
+
     return Wrap(
       spacing: gap,
       runSpacing: gap,
@@ -253,43 +224,35 @@ class _StatsGrid extends StatelessWidget {
         for (final s in stats)
           SizedBox(
             width: math.max(cardWidth, 0),
-            child: _StatCard(data: s),
+            child: _buildStatCard(
+              context: context,
+              title: s.title,
+              value: s.value,
+              icon: s.icon,
+              tileBg: s.tileBg,
+              tileIcon: s.tileIcon,
+              footIcon: s.footIcon,
+              footStrong: s.footStrong,
+              footLight: s.footLight,
+              footColor: s.footColor,
+            ),
           ),
       ],
     );
   }
-}
 
-class _StatData {
-  const _StatData(
-    this.title,
-    this.value,
-    this.icon,
-    this.tileBg,
-    this.tileIcon,
-    this.footIcon,
-    this.footStrong,
-    this.footLight,
-    this.footColor,
-  );
-
-  final String title;
-  final String value;
-  final IconData icon;
-  final Color tileBg;
-  final Color tileIcon;
-  final IconData footIcon;
-  final String footStrong;
-  final String footLight;
-  final Color footColor;
-}
-
-class _StatCard extends StatelessWidget {
-  const _StatCard({required this.data});
-  final _StatData data;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildStatCard({
+    required BuildContext context,
+    required String title,
+    required String value,
+    required IconData icon,
+    required Color tileBg,
+    required Color tileIcon,
+    required IconData footIcon,
+    required String footStrong,
+    required String footLight,
+    required Color footColor,
+  }) {
     final p = AppPalette.of(context);
     return Container(
       padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
@@ -305,7 +268,7 @@ class _StatCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      data.title,
+                      title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -319,7 +282,7 @@ class _StatCard extends StatelessWidget {
                       fit: BoxFit.scaleDown,
                       alignment: Alignment.centerLeft,
                       child: Text(
-                        data.value,
+                        value,
                         style: TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.w800,
@@ -335,36 +298,32 @@ class _StatCard extends StatelessWidget {
                 width: 46,
                 height: 46,
                 decoration: BoxDecoration(
-                  color: data.tileBg,
+                  color: tileBg,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(data.icon, size: 22, color: data.tileIcon),
+                child: Icon(icon, size: 22, color: tileIcon),
               ),
             ],
           ),
           const SizedBox(height: 14),
-          SizedBox(
-            height: 1,
-            width: double.infinity,
-            child: CustomPaint(painter: _DashedLinePainter(p.rowDivider)),
-          ),
+          _buildDashedLine(p.rowDivider),
           const SizedBox(height: 12),
           Row(
             children: [
-              Icon(data.footIcon, size: 16, color: data.footColor),
+              Icon(footIcon, size: 16, color: footColor),
               const SizedBox(width: 4),
               Text(
-                data.footStrong,
+                footStrong,
                 style: TextStyle(
                   fontSize: 13.5,
                   fontWeight: FontWeight.w700,
-                  color: data.footColor,
+                  color: footColor,
                 ),
               ),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
-                  data.footLight,
+                  footLight,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(fontSize: 13.5, color: p.textMuted),
@@ -376,69 +335,189 @@ class _StatCard extends StatelessWidget {
       ),
     );
   }
-}
 
-class _DashedLinePainter extends CustomPainter {
-  const _DashedLinePainter(this.color);
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = 1;
-    double x = 0;
-    while (x < size.width) {
-      canvas.drawLine(Offset(x, 0), Offset(x + 4, 0), paint);
-      x += 8;
-    }
+  Widget _buildDashedLine(Color color) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final dashCount = (constraints.maxWidth / 8).floor();
+        return SizedBox(
+          height: 1,
+          width: double.infinity,
+          child: Row(
+            children: [
+              for (var i = 0; i < dashCount; i++) ...[
+                Container(width: 4, height: 1, color: color),
+                if (i != dashCount - 1) const SizedBox(width: 4),
+              ],
+            ],
+          ),
+        );
+      },
+    );
   }
 
-  @override
-  bool shouldRepaint(covariant _DashedLinePainter old) => old.color != color;
-}
-
-class _RecentOrdersCard extends StatefulWidget {
-  const _RecentOrdersCard({required this.customers});
-
-  final List<Customer> customers;
-
-  @override
-  State<_RecentOrdersCard> createState() => _RecentOrdersCardState();
-}
-
-class _RecentOrdersCardState extends State<_RecentOrdersCard> {
-  static const int _pageSize = 5;
-  final int _page = 1;
-
-  static String _inr(int v) => _StatsGrid._inr(v);
-
-  static const _cols = <_Col>[
-    _Col('CUSTOMER ID', 12),
-    _Col('CUSTOMER NAME', 24),
-    _Col('PHONE NO', 18),
-    _Col('FRAME SIZE', 16),
-    _Col('FRAME TYPE', 18),
-    _Col('QTY', 8),
-    _Col('TOTAL', 13),
-    _Col('STATUS', 17),
-    _Col('ACTIONS', 12),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildRecentOrdersCard(
+    BuildContext context,
+    List<Customer> customers,
+  ) {
     final p = AppPalette.of(context);
-    final sortedCustomers = [...widget.customers]
+    final sortedCustomers = [...customers]
       ..sort((a, b) => b.orderDate.compareTo(a.orderDate));
+    const pageSize = 5;
+    final recent = sortedCustomers.take(pageSize).toList();
+    const cols = <({String label, int flex})>[
+      (label: 'CUSTOMER ID', flex: 12),
+      (label: 'CUSTOMER NAME', flex: 24),
+      (label: 'PHONE NO', flex: 18),
+      (label: 'FRAME SIZE', flex: 16),
+      (label: 'FRAME TYPE', flex: 18),
+      (label: 'QTY', flex: 8),
+      (label: 'TOTAL', flex: 13),
+      (label: 'STATUS', flex: 17),
+      (label: 'ACTIONS', flex: 12),
+    ];
 
-    final totalPages = math.max(1, (sortedCustomers.length / _pageSize).ceil());
+    Widget headerRow() => Container(
+      color: p.tableHeaderBg,
+      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 22),
+      child: Row(
+        children: [
+          for (final c in cols)
+            Expanded(
+              flex: c.flex,
+              child: Text(
+                c.label,
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.2,
+                  color: p.headerText,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
 
-    final page = _page.clamp(1, totalPages);
+    Widget orderRow(Customer o) {
+      final cell = TextStyle(fontSize: 15, color: p.textPrimary);
+      final bold = TextStyle(
+        fontSize: 15,
+        fontWeight: FontWeight.w700,
+        color: p.textPrimary,
+      );
+      return Container(
+        decoration: BoxDecoration(
+          border: Border(top: BorderSide(color: p.rowDivider)),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+        child: Row(
+          children: [
+            Expanded(
+              flex: cols[0].flex,
+              child: Text(o.id, style: bold),
+            ),
+            Expanded(
+              flex: cols[1].flex,
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: p.avatarBg,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Text(
+                      o.name.isEmpty ? '?' : o.name[0].toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.gold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          o.name,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: p.textPrimary,
+                          ),
+                        ),
+                        Text(
+                          o.city,
+                          style: TextStyle(fontSize: 13, color: p.textMuted),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              flex: cols[2].flex,
+              child: Text(o.phone, style: cell),
+            ),
+            Expanded(
+              flex: cols[3].flex,
+              child: Text(o.frameSize, style: cell),
+            ),
+            Expanded(
+              flex: cols[4].flex,
+              child: Text(o.frameType, style: cell),
+            ),
+            Expanded(
+              flex: cols[5].flex,
+              child: Text('${o.qty}', style: bold),
+            ),
+            Expanded(
+              flex: cols[6].flex,
+              child: Text(_inr(o.total), style: bold),
+            ),
+            Expanded(
+              flex: cols[7].flex,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: StatusPill(status: o.status),
+              ),
+            ),
+            Expanded(
+              flex: cols[8].flex,
+              child: Row(
+                children: [
+                  InkWell(
+                    onTap: () => showViewCustomerDialog(context, o),
+                    child: Icon(
+                      Icons.visibility,
+                      size: 21,
+                      color: p.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(width: 18),
+                  InkWell(
+                    onTap: () => showEditCustomerDialog(context, o),
+                    child: Icon(
+                      Icons.edit_outlined,
+                      size: 20,
+                      color: p.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
-    final recent = sortedCustomers
-        .skip((page - 1) * _pageSize)
-        .take(_pageSize)
-        .toList();
     return Container(
       decoration: p.card(),
       clipBehavior: Clip.antiAlias,
@@ -496,233 +575,35 @@ class _RecentOrdersCardState extends State<_RecentOrdersCard> {
               ],
             ),
           ),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final tableWidth = math.max(constraints.maxWidth, 1000.0);
-              return SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: SizedBox(
-                  width: tableWidth,
-                  child: Column(
-                    children: [
-                      _headerRow(p),
-
-                      if (recent.isEmpty)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 48),
-                          child: Text(
-                            'No orders yet',
-                            style: TextStyle(fontSize: 15, color: p.textMuted),
-                          ),
-                        )
-                      else
-                        for (final c in recent) _orderRow(context, p, c),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-          // AppPaginationFooter(
-          //   totalItems: widget.customers.length,
-          //   page: page,
-          //   pageSize: _pageSize,
-          //   itemLabel: 'orders',
-          //   onPageChanged: (newPage) {
-          //     setState(() => _page = newPage);
-          //   },
-          // ),
-        ],
-      ),
-    );
-  }
-
-  Widget _headerRow(AppPalette p) => Container(
-    color: p.tableHeaderBg,
-    padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 22),
-    child: Row(
-      children: [
-        for (final c in _cols)
           Expanded(
-            flex: c.flex,
-            child: Text(
-              c.label,
-              style: TextStyle(
-                fontSize: 12.5,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1.2,
-                color: p.headerText,
-              ),
-            ),
-          ),
-      ],
-    ),
-  );
-
-  Widget _orderRow(BuildContext context, AppPalette p, Customer o) {
-    final cell = TextStyle(fontSize: 15, color: p.textPrimary);
-    final bold = TextStyle(
-      fontSize: 15,
-      fontWeight: FontWeight.w700,
-      color: p.textPrimary,
-    );
-    return Container(
-      decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: p.rowDivider)),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
-      child: Row(
-        children: [
-          Expanded(
-            flex: _cols[0].flex,
-            child: Text(o.id, style: bold),
-          ),
-          Expanded(
-            flex: _cols[1].flex,
-            child: Row(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: p.avatarBg,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Text(
-                    o.name.isEmpty ? '?' : o.name[0].toUpperCase(),
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.gold,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final tableWidth = math.max(constraints.maxWidth, 1000.0);
+                return SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: SizedBox(
+                    width: tableWidth,
+                    child: Column(
+                      children: [
+                        headerRow(),
+                        if (recent.isEmpty)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 48),
+                            child: Text(
+                              'No orders yet',
+                              style: TextStyle(
+                                fontSize: 15,
+                                color: p.textMuted,
+                              ),
+                            ),
+                          )
+                        else
+                          for (final c in recent) orderRow(c),
+                      ],
                     ),
                   ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        o.name,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: p.textPrimary,
-                        ),
-                      ),
-                      Text(
-                        o.city,
-                        style: TextStyle(fontSize: 13, color: p.textMuted),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            flex: _cols[2].flex,
-            child: Text(o.phone, style: cell),
-          ),
-          Expanded(
-            flex: _cols[3].flex,
-            child: Text(o.frameSize, style: cell),
-          ),
-          Expanded(
-            flex: _cols[4].flex,
-            child: Text(o.frameType, style: cell),
-          ),
-          Expanded(
-            flex: _cols[5].flex,
-            child: Text('${o.qty}', style: bold),
-          ),
-          Expanded(
-            flex: _cols[6].flex,
-            child: Text(_inr(o.total), style: bold),
-          ),
-          Expanded(
-            flex: _cols[7].flex,
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: _StatusPill(status: o.status),
-            ),
-          ),
-          Expanded(
-            flex: _cols[8].flex,
-            child: Row(
-              children: [
-                InkWell(
-                  onTap: () => showViewCustomerDialog(context, o),
-                  child: Icon(Icons.visibility, size: 21, color: p.textPrimary),
-                ),
-                const SizedBox(width: 18),
-                InkWell(
-                  onTap: () => showEditCustomerDialog(context, o),
-                  child: Icon(
-                    Icons.edit_outlined,
-                    size: 20,
-                    color: p.textPrimary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Col {
-  const _Col(this.label, this.flex);
-  final String label;
-  final int flex;
-}
-
-class _StatusPill extends StatelessWidget {
-  const _StatusPill({required this.status});
-  final OrderStatus status;
-
-  @override
-  Widget build(BuildContext context) {
-    final (label, color) = switch (status) {
-      OrderStatus.inProgress => ('In Progress', AppPalette.statusGold),
-      OrderStatus.completed => ('Completed', AppPalette.statusGreen),
-      OrderStatus.pending => ('Pending', AppPalette.statusGold),
-      OrderStatus.cancelled => ('Cancelled', AppPalette.statusRed),
-    };
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 16,
-            height: 16,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.25),
-              shape: BoxShape.circle,
-            ),
-            child: Container(
-              width: 9,
-              height: 9,
-              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-            ),
-          ),
-          const SizedBox(width: 5),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 13.5,
-              fontWeight: FontWeight.w500,
-              color: color,
+                );
+              },
             ),
           ),
         ],

@@ -1,34 +1,23 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:provider/provider.dart';
+import 'package:raigon_art/core/provider/pagination_provider.dart';
 import 'package:raigon_art/core/theme/app_colors.dart';
 import 'package:raigon_art/core/theme/app_palette.dart';
 import 'package:raigon_art/core/widgets/app_pagination_footer.dart';
+import 'package:raigon_art/core/widgets/app_primary_button.dart';
 import 'package:raigon_art/features/customers/presentation/widgets/add_customer_dialog.dart';
 import 'package:raigon_art/features/customers/presentation/widgets/customer_delete_dialog.dart';
 import 'package:raigon_art/features/customers/presentation/widgets/customer_view_dialog.dart';
-import 'package:raigon_art/service/csv/csv_downloader.dart';
+import 'package:raigon_art/core/utils/csv_export.dart';
 import 'package:raigon_art/core/widgets/app_dropdown.dart';
 import 'package:raigon_art/core/widgets/app_snackbar.dart';
 import 'package:raigon_art/features/customers/data/customer_csv.dart';
-import 'package:raigon_art/features/customers/data/customer_model.dart';
+import 'package:raigon_art/features/customers/models/customer_model.dart';
 import 'package:raigon_art/features/customers/data/customer_store.dart';
 import 'package:raigon_art/features/customers/presentation/widgets/customers_table.dart';
-import 'package:raigon_art/features/dashboard/models/order_status.dart';
-import 'package:raigon_art/features/shell/presentation/shell_scope.dart';
-
-enum StatusFilter {
-  all('All Statuses', null),
-  pending('Pending', OrderStatus.pending),
-  inProgress('In Progress', OrderStatus.inProgress),
-  completed('Completed', OrderStatus.completed),
-  cancelled('Cancelled', OrderStatus.cancelled);
-
-  const StatusFilter(this.label, this.status);
-  final String label;
-  final OrderStatus? status;
-}
+import 'package:raigon_art/core/models/status.dart';
+import 'package:raigon_art/core/widgets/shell_scope.dart';
 
 enum SortOption {
   newest('Newest First'),
@@ -48,12 +37,9 @@ class CustomersScreen extends StatefulWidget {
 }
 
 class _CustomersScreenState extends State<CustomersScreen> {
-  static const int _pageSize = 10;
-
   final _searchCtrl = TextEditingController();
-  StatusFilter _status = StatusFilter.all;
+  Status? _status;
   SortOption _sort = SortOption.newest;
-  int _page = 1;
 
   Future<void> _edit(Customer c) => showEditCustomerDialog(context, c);
 
@@ -84,7 +70,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
   List<Customer> get _filtered {
     final q = _searchCtrl.text.trim().toLowerCase();
     final list = CustomerStore.customers.value.where((c) {
-      final statusOk = _status.status == null || c.status == _status.status;
+      final statusOk = _status == null || c.status == _status;
       final searchOk =
           q.isEmpty ||
           [
@@ -129,49 +115,60 @@ class _CustomersScreenState extends State<CustomersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final pagination = context.watch<PaginationProvider>();
     final p = AppPalette.of(context);
     final all = _filtered;
-    final totalPages = math.max(1, (all.length / _pageSize).ceil());
-    final page = _page.clamp(1, totalPages);
-    final pageItems = all.skip((page - 1) * _pageSize).take(_pageSize).toList();
+    final pageItems = pagination.paginate(all);
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final wide = constraints.maxWidth >= 760;
-        return SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // Page header stays at the top.
               _header(p, wide),
+
               const SizedBox(height: 24),
-              Container(
-                decoration: p.card(),
-                clipBehavior: Clip.antiAlias,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(22),
-                      child: _toolbar(p, wide),
-                    ),
-                    CustomersTable(
-                      customers: pageItems,
-                      onView: (c) => showViewCustomerDialog(context, c),
-                      onWhatsApp: (c) {},
-                      onEdit: _edit,
-                      onDelete: _delete,
-                    ),
-                    AppPaginationFooter(
-                      totalItems: all.length,
-                      page: page,
-                      pageSize: _pageSize,
-                      itemLabel: 'customers',
-                      onPageChanged: (newPage) {
-                        setState(() => _page = newPage);
-                      },
-                    ),
-                  ],
+
+              // Card fills the remaining screen height.
+              Expanded(
+                child: Container(
+                  width: double.infinity,
+                  decoration: p.card(),
+                  clipBehavior: Clip.antiAlias,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Search, filter and sort toolbar.
+                      Padding(
+                        padding: const EdgeInsets.all(22),
+                        child: _toolbar(p, wide),
+                      ),
+
+                      // Table occupies the available card space.
+                      CustomersTable(
+                        customers: pageItems,
+                        onView: (c) => showViewCustomerDialog(context, c),
+                        onWhatsApp: (c) {},
+                        onEdit: _edit,
+                        onDelete: _delete,
+                      ),
+
+                      AppPaginationFooter(
+                        totalItems: all.length,
+                        page: pagination.page,
+                        pageSize: pagination.pageSize,
+                        itemLabel: 'customers',
+                        onPageChanged: (newPage) {
+                          pagination.setPage(newPage, all.length);
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -245,43 +242,10 @@ class _CustomersScreenState extends State<CustomersScreen> {
           ),
         ),
         const SizedBox(width: 12),
-        InkWell(
-          onTap: () => ShellScope.of(context).openAddCustomer(),
-          borderRadius: BorderRadius.circular(10),
-          child: Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: wide ? 22 : 14,
-              vertical: 14,
-            ),
-            decoration: BoxDecoration(
-              gradient: AppColors.darkGradient,
-              borderRadius: BorderRadius.circular(10),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.gold.withValues(alpha: 0.35),
-                  blurRadius: 14,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.person_add, size: 20, color: Colors.white),
-                if (wide) ...[
-                  const SizedBox(width: 10),
-                  const Text(
-                    'Add New Customer',
-                    style: TextStyle(
-                      fontSize: 15.5,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
+        AppPrimaryButton(
+          label: 'Add New Customer',
+          icon: Icons.person_add,
+          onPressed: () => ShellScope.of(context).openAddCustomer(),
         ),
       ],
     );
@@ -297,7 +261,10 @@ class _CustomersScreenState extends State<CustomersScreen> {
       height: 46,
       child: TextField(
         controller: _searchCtrl,
-        onChanged: (_) => setState(() => _page = 1),
+        onChanged: (_) {
+          context.read<PaginationProvider>().resetPage();
+          setState(() {});
+        },
         cursorColor: p.textPrimary,
         style: TextStyle(fontSize: 15, color: p.textPrimary),
         decoration: InputDecoration(
@@ -315,15 +282,17 @@ class _CustomersScreenState extends State<CustomersScreen> {
   }
 
   Widget _toolbar(AppPalette p, bool wide) {
-    final status = AppDropdown<StatusFilter>(
+    final status = AppDropdown<Status?>(
       value: _status,
-      items: StatusFilter.values,
-      labelOf: (s) => s.label,
+      items: [null, ...Status.values],
+      labelOf: (status) => status?.label ?? 'All Statuses',
       width: 175,
-      onChanged: (v) => setState(() {
-        _status = v;
-        _page = 1;
-      }),
+      onChanged: (value) {
+        setState(() {
+          _status = value;
+          context.read<PaginationProvider>().resetPage();
+        });
+      },
     );
     final sort = AppDropdown<SortOption>(
       value: _sort,

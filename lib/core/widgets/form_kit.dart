@@ -15,7 +15,8 @@ class FormColors {
   bool get dark => p.isDark;
   Color get modalBg => p.surface;
   Color get footerBg => dark ? p.surface : const Color(0xFFF7F5F0);
-  Color get textFill => dark ? const Color(0xFF2E3047) : const Color(0xFFF9F7F2);
+  Color get textFill =>
+      dark ? const Color(0xFF2E3047) : const Color(0xFFF9F7F2);
   Color get focusFill => dark ? const Color(0xFF35374F) : Colors.white;
   Color get textBorder =>
       dark ? const Color(0xFFE9E9F0) : const Color(0xFFE7E2D6);
@@ -34,17 +35,36 @@ class FormColors {
 }
 
 const _months = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
 ];
 const _monthsFull = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
 ];
 
 String fmtDate(DateTime d) =>
     '${_months[d.month - 1]} ${d.day.toString().padLeft(2, '0')}, ${d.year}';
-
 
 class SectionHeader extends StatelessWidget {
   const SectionHeader({super.key, required this.icon, required this.label});
@@ -159,7 +179,6 @@ class FormRow extends StatelessWidget {
   }
 }
 
-
 class AppTextBox extends StatefulWidget {
   const AppTextBox({
     super.key,
@@ -233,8 +252,9 @@ class _AppTextBoxState extends State<AppTextBox> {
             : null,
       ),
       child: Row(
-        crossAxisAlignment:
-            multiline ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+        crossAxisAlignment: multiline
+            ? CrossAxisAlignment.start
+            : CrossAxisAlignment.center,
         children: [
           Expanded(
             child: TextField(
@@ -275,7 +295,11 @@ class _AppTextBoxState extends State<AppTextBox> {
 }
 
 class _Stepper extends StatelessWidget {
-  const _Stepper({required this.onUp, required this.onDown, this.enabled = true});
+  const _Stepper({
+    required this.onUp,
+    required this.onDown,
+    this.enabled = true,
+  });
   final VoidCallback onUp;
   final VoidCallback onDown;
   final bool enabled;
@@ -413,7 +437,10 @@ class _FormDropdownState<T> extends State<FormDropdown<T>> {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
                     color: item == widget.value ? p.avatarBg : null,
                     borderRadius: BorderRadius.circular(8),
@@ -479,7 +506,6 @@ class _FormDropdownState<T> extends State<FormDropdown<T>> {
     );
   }
 }
-
 
 class DateField extends StatefulWidget {
   const DateField({
@@ -646,10 +672,11 @@ class _CalendarCardState extends State<_CalendarCard> {
       final label = dayIndex < 1
           ? prevDays + dayIndex
           : dayIndex > days
-              ? dayIndex - days
-              : dayIndex;
+          ? dayIndex - days
+          : dayIndex;
       final date = DateTime(_month.year, _month.month, dayIndex);
-      final isSel = inMonth &&
+      final isSel =
+          inMonth &&
           widget.selected != null &&
           DateUtils.isSameDay(widget.selected, date);
       return SizedBox(
@@ -677,8 +704,8 @@ class _CalendarCardState extends State<_CalendarCard> {
                   color: isSel
                       ? Colors.white
                       : inMonth
-                          ? p.textPrimary
-                          : p.textMuted.withValues(alpha: 0.5),
+                      ? p.textPrimary
+                      : p.textMuted.withValues(alpha: 0.5),
                 ),
               ),
             ),
@@ -688,36 +715,37 @@ class _CalendarCardState extends State<_CalendarCard> {
     }
 
     Widget chip(String label, int plusDays) => InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: () => widget.onPick(
+        DateUtils.dateOnly(DateTime.now()).add(Duration(days: plusDays)),
+      ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: p.chipFill,
           borderRadius: BorderRadius.circular(8),
-          onTap: () =>
-              widget.onPick(DateUtils.dateOnly(DateTime.now()).add(Duration(days: plusDays))),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              color: p.chipFill,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: p.textPrimary,
-              ),
-            ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: p.textPrimary,
           ),
-        );
+        ),
+      ),
+    );
 
     Widget navButton(IconData icon, VoidCallback onTap) => InkWell(
-          onTap: onTap,
-          customBorder: const CircleBorder(),
-          child: Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(color: p.chipFill, shape: BoxShape.circle),
-            child: Icon(icon, size: 20, color: p.textPrimary),
-          ),
-        );
+      onTap: onTap,
+      customBorder: const CircleBorder(),
+      child: Container(
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(color: p.chipFill, shape: BoxShape.circle),
+        child: Icon(icon, size: 20, color: p.textPrimary),
+      ),
+    );
 
     return Material(
       type: MaterialType.transparency,
@@ -759,7 +787,15 @@ class _CalendarCardState extends State<_CalendarCard> {
             const SizedBox(height: 14),
             Row(
               children: [
-                for (final d in const ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'])
+                for (final d in const [
+                  'SU',
+                  'MO',
+                  'TU',
+                  'WE',
+                  'TH',
+                  'FR',
+                  'SA',
+                ])
                   SizedBox(
                     width: 40,
                     child: Text(
@@ -800,7 +836,6 @@ class _CalendarCardState extends State<_CalendarCard> {
     );
   }
 }
-
 
 class DashedLinePainter extends CustomPainter {
   const DashedLinePainter(this.color);

@@ -8,10 +8,11 @@ class AppPaginationFooter extends StatelessWidget {
     super.key,
     required this.totalItems,
     required this.page,
-    required this.pageSize,
+    this.pageSize = defaultPageSize,
     required this.onPageChanged,
     this.itemLabel = 'customers',
   });
+  static const int defaultPageSize = 10;
 
   final int totalItems;
   final int page;
@@ -23,17 +24,15 @@ class AppPaginationFooter extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = AppPalette.of(context);
 
-    final totalPages = math.max(1, (totalItems / pageSize).ceil());
+    final safePageSize = pageSize > 0 ? pageSize : defaultPageSize;
+    final totalPages = math.max(1, (totalItems / safePageSize).ceil());
     final currentPage = page.clamp(1, totalPages);
 
-    final start =
-        totalItems == 0 ? 0 : (currentPage - 1) * pageSize + 1;
-    final end = math.min(currentPage * pageSize, totalItems);
+    final start = totalItems == 0 ? 0 : (currentPage - 1) * safePageSize + 1;
 
-    final bold = TextStyle(
-      fontWeight: FontWeight.w700,
-      color: p.textPrimary,
-    );
+    final end = math.min(currentPage * safePageSize, totalItems);
+
+    final bold = TextStyle(fontWeight: FontWeight.w700, color: p.textPrimary);
 
     Widget pageButton({
       required String label,
@@ -48,10 +47,7 @@ class AppPaginationFooter extends StatelessWidget {
         onTap: enabled ? onTap : null,
         borderRadius: BorderRadius.circular(8),
         child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 14,
-            vertical: 10,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
             color: p.surface,
             borderRadius: BorderRadius.circular(8),
@@ -92,14 +88,9 @@ class AppPaginationFooter extends StatelessWidget {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        border: Border(
-          top: BorderSide(color: p.rowDivider),
-        ),
+        border: Border(top: BorderSide(color: p.rowDivider)),
       ),
-      padding: const EdgeInsets.symmetric(
-        horizontal: 22,
-        vertical: 18,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final pagination = Row(
@@ -134,10 +125,7 @@ class AppPaginationFooter extends StatelessWidget {
 
           final count = Text.rich(
             TextSpan(
-              style: TextStyle(
-                fontSize: 14.5,
-                color: p.textMuted,
-              ),
+              style: TextStyle(fontSize: 14.5, color: p.textMuted),
               children: [
                 const TextSpan(text: 'Showing '),
                 TextSpan(text: '$start–$end', style: bold),
@@ -148,17 +136,14 @@ class AppPaginationFooter extends StatelessWidget {
             ),
           );
 
-          // Use a vertical layout when there isn't enough horizontal space.
+          // Use a vertical layout when horizontal space is limited.
           if (constraints.maxWidth < 650) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 count,
                 const SizedBox(height: 14),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: pagination,
-                ),
+                Align(alignment: Alignment.centerRight, child: pagination),
               ],
             );
           }

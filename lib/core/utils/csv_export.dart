@@ -4,11 +4,8 @@ import 'dart:js_interop';
 import 'package:flutter/foundation.dart';
 import 'package:web/web.dart' as web;
 
-Future<void> downloadCsv(
-  String fileName,
-  String content,
-) async {
-  debugPrint('========== WEB CSV DOWNLOAD START ==========');
+Future<void> downloadCsv(String fileName, String content) async {
+  debugPrint('WEB CSV DOWNLOAD START');
   debugPrint('File name: $fileName');
   debugPrint('Content length: ${content.length}');
 
@@ -24,9 +21,7 @@ Future<void> downloadCsv(
 
     final blob = web.Blob(
       <JSAny>[bytes.toJS].toJS,
-      web.BlobPropertyBag(
-        type: 'text/csv;charset=utf-8',
-      ),
+      web.BlobPropertyBag(type: 'text/csv;charset=utf-8'),
     );
 
     debugPrint('Blob created successfully');
@@ -35,11 +30,10 @@ Future<void> downloadCsv(
 
     debugPrint('Object URL created');
 
-    final anchor =
-        web.document.createElement('a') as web.HTMLAnchorElement
-          ..href = url
-          ..download = fileName
-          ..style.display = 'none';
+    final anchor = web.document.createElement('a') as web.HTMLAnchorElement
+      ..href = url
+      ..download = fileName
+      ..style.display = 'none';
 
     web.document.body?.append(anchor);
 
@@ -55,13 +49,12 @@ Future<void> downloadCsv(
 
     debugPrint('Object URL revoked');
 
-    debugPrint('========== WEB CSV DOWNLOAD SUCCESS ==========');
+    debugPrint('WEB CSV DOWNLOAD SUCCESS');
   } catch (e, stackTrace) {
-    debugPrint('========== WEB CSV DOWNLOAD ERROR ==========');
+    debugPrint('WEB CSV DOWNLOAD ERROR');
     debugPrint('Error: $e');
     debugPrint('Type: ${e.runtimeType}');
     debugPrint('$stackTrace');
-    debugPrint('=============================================');
 
     rethrow;
   }

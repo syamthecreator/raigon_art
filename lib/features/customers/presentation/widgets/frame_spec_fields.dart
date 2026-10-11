@@ -1,8 +1,8 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:raigon_art/features/customers/data/frame_spec.dart';
-import 'package:raigon_art/features/customers/widgets/form_kit.dart';
+import 'package:raigon_art/features/customers/models/frame_spec.dart';
+import 'package:raigon_art/core/widgets/form_kit.dart';
 import 'package:raigon_art/features/frame_sizes/data/frame_size_store.dart';
 
 const kUnits = ['Inch', 'CM', 'MM'];

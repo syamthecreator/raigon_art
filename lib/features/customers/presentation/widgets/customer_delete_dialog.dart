@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:raigon_art/features/customers/data/customer_model.dart';
-import 'package:raigon_art/features/customers/widgets/customer_dialog_kit.dart';
-import 'package:raigon_art/features/customers/widgets/form_kit.dart';
+import 'package:raigon_art/features/customers/models/customer_model.dart';
+import 'package:raigon_art/core/widgets/customer_dialog_kit.dart';
+import 'package:raigon_art/core/widgets/form_kit.dart';
 
 /// Returns true when the user confirms the delete.
 Future<bool> showDeleteCustomerDialog(

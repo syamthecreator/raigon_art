@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:raigon_art/features/customers/data/customer_model.dart';
+import 'package:raigon_art/features/customers/models/customer_model.dart';
 
 const _header = [
   'Customer ID',
@@ -31,7 +31,7 @@ String _csvDate(DateTime date) {
 }
 
 String buildCustomersCsv(List<Customer> customers) {
-  debugPrint('========== CSV EXPORT START ==========');
+  debugPrint('CSV EXPORT START');
   debugPrint('Customer count: ${customers.length}');
 
   final rows = <String>[_header.map(_esc).join(',')];
@@ -77,7 +77,7 @@ String buildCustomersCsv(List<Customer> customers) {
   debugPrint('CSV length: ${csv.length} characters');
   debugPrint('CSV preview:');
   debugPrint(csv.length > 500 ? '${csv.substring(0, 500)}...' : csv);
-  debugPrint('========== CSV EXPORT END ==========');
+  debugPrint('CSV EXPORT END');
 
   return csv;
 }

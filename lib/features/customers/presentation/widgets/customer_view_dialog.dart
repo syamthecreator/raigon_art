@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:raigon_art/core/theme/app_colors.dart';
 import 'package:raigon_art/core/theme/app_palette.dart';
+import 'package:raigon_art/core/widgets/app_primary_button.dart';
 import 'package:raigon_art/core/widgets/status_pill.dart';
-import 'package:raigon_art/features/customers/data/customer_model.dart';
-import 'package:raigon_art/features/customers/data/frame_spec.dart';
+import 'package:raigon_art/features/customers/models/customer_model.dart';
+import 'package:raigon_art/features/customers/models/frame_spec.dart';
 import 'package:raigon_art/features/customers/presentation/widgets/add_customer_dialog.dart';
-import 'package:raigon_art/features/customers/widgets/customer_dialog_kit.dart';
-import 'package:raigon_art/features/customers/widgets/form_kit.dart';
+import 'package:raigon_art/core/widgets/customer_dialog_kit.dart';
+import 'package:raigon_art/core/widgets/form_kit.dart';
 
 enum _ViewAction { edit }
 
@@ -39,7 +40,6 @@ class _VaultPhoto {
   final String sizeLabel;
   final ImageProvider image;
 }
-
 
 List<_VaultPhoto> _photosOf(Customer c) {
   return [
@@ -835,41 +835,13 @@ class _ViewCustomerDialogState extends State<ViewCustomerDialog> {
         mainAxisAlignment: MainAxisAlignment.end,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Edit Customer & Order
-          InkWell(
-            onTap: () => Navigator.of(context).pop(_ViewAction.edit),
-            borderRadius: BorderRadius.circular(8),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              decoration: BoxDecoration(
-                gradient: AppColors.darkGradient,
-                borderRadius: BorderRadius.circular(8),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.gold.withValues(alpha: 0.22),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.edit_square, size: 16, color: Colors.white),
-                  SizedBox(width: 8),
-                  Text(
-                    'Edit Customer & Order',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          AppPrimaryButton(
+            label: 'Edit Customer & Order',
+            icon: Icons.edit_square,
+            onPressed: () {
+              Navigator.of(context).pop(_ViewAction.edit);
+            },
           ),
-
           const SizedBox(width: 10),
 
           // Send WhatsApp Receipt
@@ -879,7 +851,7 @@ class _ViewCustomerDialogState extends State<ViewCustomerDialog> {
             },
             borderRadius: BorderRadius.circular(8),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
               decoration: BoxDecoration(
                 color: const Color(0xFF25D366),
                 borderRadius: BorderRadius.circular(8),
@@ -913,7 +885,7 @@ class _ViewCustomerDialogState extends State<ViewCustomerDialog> {
             onTap: () => Navigator.of(context).pop(),
             borderRadius: BorderRadius.circular(8),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
               decoration: p.isDark
                   ? BoxDecoration(
                       color: p.chipFill,
@@ -924,7 +896,7 @@ class _ViewCustomerDialogState extends State<ViewCustomerDialog> {
               child: Text(
                 'Close',
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: p.textPrimary,
                 ),

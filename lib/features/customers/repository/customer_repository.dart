@@ -1,21 +1,18 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
-import 'package:raigon_art/features/customers/data/customer_model.dart';
+import 'package:raigon_art/features/customers/models/customer_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Storage contract. Implement this with Firestore later.
 abstract class CustomerRepository {
   Future<List<Customer>> getAll();
   Future<void> upsert(Customer customer);
   Future<void> delete(String id);
 }
 
-/// SharedPreferences implementation (whole list stored as one JSON string).
 class LocalCustomerRepository implements CustomerRepository {
   static const _key = 'raigon_customers_v1';
 
-  // Serialises writes so quick successive saves can't overwrite each other.
   Future<void> _queue = Future.value();
 
   Future<List<Customer>> _read() async {
@@ -36,10 +33,7 @@ class LocalCustomerRepository implements CustomerRepository {
 
   Future<void> _write(List<Customer> list) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-      _key,
-      jsonEncode([for (final c in list) c.toJson()]),
-    );
+    await prefs.setString(_key, jsonEncode([for (final c in list) c.toJson()]));
   }
 
   Future<void> _enqueue(Future<void> Function() job) {
@@ -54,20 +48,20 @@ class LocalCustomerRepository implements CustomerRepository {
 
   @override
   Future<void> upsert(Customer customer) => _enqueue(() async {
-        final list = await _read();
-        final i = list.indexWhere((c) => c.id == customer.id);
-        if (i == -1) {
-          list.insert(0, customer); // newest first
-        } else {
-          list[i] = customer;
-        }
-        await _write(list);
-      });
+    final list = await _read();
+    final i = list.indexWhere((c) => c.id == customer.id);
+    if (i == -1) {
+      list.insert(0, customer);
+    } else {
+      list[i] = customer;
+    }
+    await _write(list);
+  });
 
   @override
   Future<void> delete(String id) => _enqueue(() async {
-        final list = await _read()
-          ..removeWhere((c) => c.id == id);
-        await _write(list);
-      });
+    final list = await _read()
+      ..removeWhere((c) => c.id == id);
+    await _write(list);
+  });
 }

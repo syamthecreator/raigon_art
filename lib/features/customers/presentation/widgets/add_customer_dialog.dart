@@ -11,19 +11,21 @@ import 'package:raigon_art/core/theme/app_palette.dart';
 import 'package:raigon_art/core/widgets/app_primary_button.dart';
 import 'package:raigon_art/core/widgets/app_snackbar.dart';
 import 'package:raigon_art/features/customers/models/customer_model.dart';
-import 'package:raigon_art/features/customers/data/customer_store.dart';
 import 'package:raigon_art/features/customers/models/frame_spec.dart';
 import 'package:raigon_art/core/widgets/customer_dialog_kit.dart';
 import 'package:raigon_art/core/widgets/form_kit.dart';
 import 'package:raigon_art/features/customers/presentation/widgets/frame_spec_fields.dart';
 import 'package:raigon_art/core/models/status.dart';
+import 'package:raigon_art/features/customers/providers/customer_provider.dart';
 import 'package:raigon_art/features/frame_sizes/data/frame_size_store.dart';
+import 'package:provider/provider.dart';
 
 Future<void> showAddCustomerDialog(BuildContext context) async {
   await FrameSizeStore.initialize();
 
   if (!context.mounted) return;
 
+  // Keep your existing showGeneralDialog code here.
   final result = await showGeneralDialog<Customer>(
     context: context,
     barrierDismissible: false,
@@ -44,12 +46,21 @@ Future<void> showAddCustomerDialog(BuildContext context) async {
     },
   );
 
-  if (result == null) return;
+  if (result == null || !context.mounted) return;
 
-  CustomerStore.add(result);
+  try {
+    await context.read<CustomerProvider>().add(result);
 
-  if (context.mounted) {
-    AppSnackBar.success(context, 'Customer & frame order saved successfully.');
+    if (context.mounted) {
+      AppSnackBar.success(
+        context,
+        'Customer & frame order saved successfully.',
+      );
+    }
+  } catch (error) {
+    if (context.mounted) {
+      AppSnackBar.error(context, 'Could not save customer. Try again.');
+    }
   }
 }
 
@@ -62,10 +73,19 @@ Future<void> showEditCustomerDialog(
     label: 'Edit customer',
     builder: (_) => AddCustomerDialog(existing: customer),
   );
-  if (result == null) return;
-  CustomerStore.update(result);
-  if (context.mounted) {
-    AppSnackBar.success(context, 'Customer updated successfully.');
+
+  if (result == null || !context.mounted) return;
+
+  try {
+    await context.read<CustomerProvider>().update(result);
+
+    if (context.mounted) {
+      AppSnackBar.success(context, 'Customer updated successfully.');
+    }
+  } catch (error) {
+    if (context.mounted) {
+      AppSnackBar.error(context, 'Could not update customer. Try again.');
+    }
   }
 }
 
@@ -380,7 +400,7 @@ class _AddCustomerDialogState extends State<AddCustomerDialog> {
         : frames.fold<int>(0, (a, f) => a + f.qty);
 
     final customer = Customer(
-      id: widget.existing?.id ?? CustomerStore.nextId(),
+      id: widget.existing?.id ?? context.read<CustomerProvider>().nextId(),
       name: name,
       city: _city.text.trim(),
       phone: phone,

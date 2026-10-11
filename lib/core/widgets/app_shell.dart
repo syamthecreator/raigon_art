@@ -10,10 +10,11 @@ import 'package:raigon_art/core/widgets/notification_panel.dart';
 import 'package:raigon_art/features/customers/presentation/screens/customers_screen.dart';
 import 'package:raigon_art/features/dashboard/presentation/screens/dashboard_screen.dart';
 import 'package:raigon_art/features/frame_sizes/presentation/screens/frame_sizes_screen.dart';
+import 'package:raigon_art/features/messaging_automation/presentation/screens/messaging_automation_screen.dart';
 import 'package:raigon_art/features/orders/presentation/screens/orders_screen.dart';
 import 'package:raigon_art/features/photo_collection/presentation/screens/photo_collection_screen.dart';
 import 'package:raigon_art/features/reports/presentation/screens/reports_screen.dart';
-import 'package:raigon_art/features/settings/presentation/screens/settings_screen.dart';
+import 'package:raigon_art/features/profile/presentation/screens/profile_screen.dart';
 import 'package:raigon_art/core/widgets/shell_scope.dart';
 
 class AppShell extends StatefulWidget {
@@ -53,11 +54,9 @@ class _AppShellState extends State<AppShell> {
     NavDestination.orders => const OrdersScreen(),
     NavDestination.photoCollection => const PhotoCollectionScreen(),
     NavDestination.frameSizes => const FrameSizesScreen(),
+    NavDestination.messagingAutomation => const MessagingAutomationScreen(),
     NavDestination.reports => const ReportsScreen(),
     NavDestination.profile => const ProfileScreen(),
-
-    // ignore: unreachable_switch_case
-    _ => _PlaceholderScreen(title: _current.label),
   };
 
   @override
@@ -122,26 +121,6 @@ class _AppShellState extends State<AppShell> {
               ),
             ],
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _PlaceholderScreen extends StatelessWidget {
-  const _PlaceholderScreen({required this.title});
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    final p = AppPalette.of(context);
-    return Center(
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 28,
-          fontWeight: FontWeight.w700,
-          color: p.textPrimary,
         ),
       ),
     );

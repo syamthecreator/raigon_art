@@ -6,6 +6,7 @@ enum NavDestination {
   orders,
   photoCollection,
   frameSizes,
+  messagingAutomation,
   reports,
   profile,
 }
@@ -17,6 +18,7 @@ extension NavDestinationX on NavDestination {
     NavDestination.orders => 'Orders',
     NavDestination.photoCollection => 'Photo Collection',
     NavDestination.frameSizes => 'Frame Sizes',
+    NavDestination.messagingAutomation => 'Messaging Automation',
     NavDestination.reports => 'Reports',
     NavDestination.profile => 'Profile',
   };
@@ -27,8 +29,10 @@ extension NavDestinationX on NavDestination {
     NavDestination.orders => Icons.move_to_inbox,
     NavDestination.photoCollection => Icons.photo_library,
     NavDestination.frameSizes => Icons.straighten,
+    NavDestination.messagingAutomation => Icons.forum_outlined,
     NavDestination.reports => Icons.bar_chart,
-NavDestination.profile => Icons.person_outline,  };
+    NavDestination.profile => Icons.storefront_outlined,
+  };
 }
 
 class ShellScope extends InheritedWidget {
@@ -44,6 +48,7 @@ class ShellScope extends InheritedWidget {
 
   static ShellScope of(BuildContext context) {
     final scope = context.dependOnInheritedWidgetOfExactType<ShellScope>();
+
     assert(scope != null, 'ShellScope not found in widget tree.');
     return scope!;
   }

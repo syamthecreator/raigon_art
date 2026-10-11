@@ -336,44 +336,87 @@ class _OrdersScreenState extends State<OrdersScreen> {
   Widget _table(AppPalette p, List<Customer> rows) {
     return LayoutBuilder(
       builder: (context, c) {
-        final w = math.max(c.maxWidth, 1240.0);
-        return SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: SizedBox(
-            width: w,
-            child: Column(
-              children: [
-                _headerRow(p),
-                if (rows.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 48),
-                    child: Text(
-                      'No orders found',
-                      style: TextStyle(fontSize: 15, color: p.textMuted),
+        final tableWidth = math.max(c.maxWidth, 1240.0);
+
+        return Scrollbar(
+          thumbVisibility: true,
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: SizedBox(
+              width: tableWidth,
+              height: c.maxHeight,
+              child: Column(
+                children: [
+                  // Keep the table header visible.
+                  _headerRow(p),
+
+                  // Scroll vertically through the order rows.
+                  Expanded(
+                    child: ScrollbarTheme(
+            data: ScrollbarThemeData(
+              thumbColor: const WidgetStatePropertyAll(AppColors.gold),
+              trackColor: WidgetStatePropertyAll(
+                AppColors.gold.withValues(alpha: 0.12),
+              ),
+              thickness: const WidgetStatePropertyAll(6),
+              radius: const Radius.circular(3),
+            ),
+            child: 
+                      
+                      Scrollbar(
+                        thumbVisibility: true,
+                        
+                        child: SingleChildScrollView(
+                          
+                          scrollDirection: Axis.vertical,
+                          child: Column(
+                            children: [
+                              if (rows.isEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 48,
+                                  ),
+                                  child: Text(
+                                    'No orders found',
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      color: p.textMuted,
+                                    ),
+                                  ),
+                                )
+                              else
+                                for (var i = 0; i < rows.length; i++)
+                                  _OrderRow(
+                                    p: p,
+                                    customer: rows[i],
+                                    isLast: i == rows.length - 1,
+                                    flex: _flex,
+                                    status: _statusOf(rows[i]),
+                                    statusColor: _statusColor,
+                                    statusLabel: _statusLabel,
+                                    payment: _paymentOf(rows[i]),
+                                    paymentColor: _paymentColor,
+                                    totalLabel: _money(rows[i].total),
+                                    deliveryLabel:
+                                        _statusOf(rows[i]) == Status.cancelled
+                                        ? 'N/A'
+                                        : _date(rows[i].expectedDelivery),
+                                    onStatus: (s) => setState(
+                                      () => _statusOverride[rows[i].id] = s,
+                                    ),
+                                    onView: () =>
+                                        showViewCustomerDialog(context, rows[i]),
+                                    onEdit: () =>
+                                        showEditCustomerDialog(context, rows[i]),
+                                  ),
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
-                  )
-                else
-                  for (var i = 0; i < rows.length; i++)
-                    _OrderRow(
-                      p: p,
-                      customer: rows[i],
-                      isLast: i == rows.length - 1,
-                      flex: _flex,
-                      status: _statusOf(rows[i]),
-                      statusColor: _statusColor,
-                      statusLabel: _statusLabel,
-                      payment: _paymentOf(rows[i]),
-                      paymentColor: _paymentColor,
-                      totalLabel: _money(rows[i].total),
-                      deliveryLabel: _statusOf(rows[i]) == Status.cancelled
-                          ? 'N/A'
-                          : _date(rows[i].expectedDelivery),
-                      onStatus: (s) =>
-                          setState(() => _statusOverride[rows[i].id] = s),
-                      onView: () => showViewCustomerDialog(context, rows[i]),
-                      onEdit: () => showEditCustomerDialog(context, rows[i]),
-                    ),
-              ],
+                  ),
+                ],
+              ),
             ),
           ),
         );

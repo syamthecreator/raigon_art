@@ -13,7 +13,6 @@ import 'package:raigon_art/features/customers/models/customer_model.dart';
 import 'package:raigon_art/features/customers/data/customer_store.dart';
 import 'package:raigon_art/core/models/status.dart';
 
-// ───────────────────────── Period data ─────────────────────────
 
 enum ReportPeriod { month1, month2, allTime }
 

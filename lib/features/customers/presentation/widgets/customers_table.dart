@@ -30,12 +30,12 @@ class CustomersTable extends StatefulWidget {
 
 class _CustomersTableState extends State<CustomersTable> {
   final ScrollController _scroll = ScrollController();
+  final ScrollController _vScroll = ScrollController();
 
   static const _labels = [
     'CUSTOMER ID',
     'CUSTOMER NAME',
     'PHONE NO',
-    'ADDRESS',
     'SELECTED PHOTOS',
     'FRAME SIZE',
     'FRAME TYPE',
@@ -44,7 +44,8 @@ class _CustomersTableState extends State<CustomersTable> {
     'ORDER DATE',
     'ACTIONS',
   ];
-  static const _w = <double>[120, 230, 150, 260, 220, 150, 160, 70, 170, 150];
+  static const _w = <double>[120, 230, 150, 220, 150, 160, 70, 170, 150];
+
   static const double _actionsMin = 200;
   static const double _hPad = 28;
   int _hoveredIndex = -1;
@@ -52,6 +53,7 @@ class _CustomersTableState extends State<CustomersTable> {
   @override
   void dispose() {
     _scroll.dispose();
+    _vScroll.dispose();
     super.dispose();
   }
 
@@ -68,39 +70,40 @@ class _CustomersTableState extends State<CustomersTable> {
             fixed + _actionsMin + _hPad * 2,
           );
 
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(
-                child: ScrollbarTheme(
-                  data: ScrollbarThemeData(
-                    thumbColor: const WidgetStatePropertyAll(AppColors.gold),
-                    trackColor: WidgetStatePropertyAll(
-                      AppColors.gold.withValues(alpha: 0.12),
-                    ),
-                    thickness: const WidgetStatePropertyAll(6),
-                    radius: const Radius.circular(3),
-                  ),
-                  child: Scrollbar(
-                    controller: _scroll,
-                    thumbVisibility: true,
-                    trackVisibility: true,
-                    child: SingleChildScrollView(
-                      controller: _scroll,
-                      scrollDirection: Axis.horizontal,
-                      child: SizedBox(
-                        width: tableWidth,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            _headerRow(p),
-
-                            if (widget.customers.isNotEmpty)
-                              for (var i = 0; i < widget.customers.length; i++)
-                                _row(p, widget.customers[i], i)
-                            else
-                              Expanded(
-                                child: Center(
+          return ScrollbarTheme(
+            data: ScrollbarThemeData(
+              thumbColor: const WidgetStatePropertyAll(AppColors.gold),
+              trackColor: WidgetStatePropertyAll(
+                AppColors.gold.withValues(alpha: 0.12),
+              ),
+              thickness: const WidgetStatePropertyAll(6),
+              radius: const Radius.circular(3),
+            ),
+            // Vertical scrollbar: pinned to the right edge of the visible area.
+            child: Scrollbar(
+              controller: _vScroll,
+              thumbVisibility: true,
+              trackVisibility: true,
+              notificationPredicate: (n) =>
+                  n.depth == 1 && n.metrics.axis == Axis.vertical,
+              // Horizontal scrollbar: pinned to the bottom edge.
+              child: Scrollbar(
+                controller: _scroll,
+                thumbVisibility: true,
+                trackVisibility: true,
+                child: SingleChildScrollView(
+                  controller: _scroll,
+                  scrollDirection: Axis.horizontal,
+                  child: SizedBox(
+                    width: tableWidth,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Header stays fixed while rows scroll vertically.
+                        _headerRow(p),
+                        Expanded(
+                          child: widget.customers.isEmpty
+                              ? Center(
                                   child: Column(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
@@ -121,16 +124,29 @@ class _CustomersTableState extends State<CustomersTable> {
                                       ),
                                     ],
                                   ),
+                                )
+                              : SingleChildScrollView(
+                                  controller: _vScroll,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      for (
+                                        var i = 0;
+                                        i < widget.customers.length;
+                                        i++
+                                      )
+                                        _row(p, widget.customers[i], i),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                          ],
                         ),
-                      ),
+                      ],
                     ),
                   ),
                 ),
               ),
-            ],
+            ),
           );
         },
       ),

@@ -1,16 +1,17 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:raigon_art/core/models/status.dart';
 import 'package:raigon_art/core/theme/app_colors.dart';
 import 'package:raigon_art/core/theme/app_palette.dart';
 import 'package:raigon_art/core/widgets/app_primary_button.dart';
 import 'package:raigon_art/core/widgets/status_pill.dart';
 import 'package:raigon_art/features/customers/models/customer_model.dart';
-import 'package:raigon_art/features/customers/data/customer_store.dart';
 import 'package:raigon_art/features/customers/presentation/widgets/add_customer_dialog.dart';
 import 'package:raigon_art/features/customers/presentation/widgets/customer_view_dialog.dart';
 import 'package:raigon_art/core/widgets/shell_scope.dart';
+import 'package:raigon_art/features/customers/providers/customer_provider.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -18,71 +19,67 @@ class DashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = AppPalette.of(context);
+    final customerProvider = context.watch<CustomerProvider>();
+    final customers = customerProvider.customers;
 
-    return ValueListenableBuilder<List<Customer>>(
-      valueListenable: CustomerStore.customers,
-      builder: (context, customers, _) {
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            return Padding(
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+    if (customerProvider.isLoading && !customerProvider.initialized) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Dashboard header stays at the top.
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Dashboard header stays at the top.
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Dashboard Overview',
-                              style: TextStyle(
-                                fontSize: 28,
-                                fontWeight: FontWeight.w700,
-                                color: p.textPrimary,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Welcome back, Raigon Arts Workshop Manager',
-                              style: TextStyle(
-                                fontSize: 15.5,
-                                color: p.textMuted,
-                              ),
-                            ),
-                          ],
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Dashboard Overview',
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w700,
+                            color: p.textPrimary,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 16),
-                      AppPrimaryButton(
-                        label: 'Add New Customer',
-                        icon: Icons.person_add,
-                        onPressed: () =>
-                            ShellScope.of(context).openAddCustomer(),
-                      ),
-                    ],
+                        const SizedBox(height: 4),
+                        Text(
+                          'Welcome back, Raigon Arts Workshop Manager',
+                          style: TextStyle(fontSize: 15.5, color: p.textMuted),
+                        ),
+                      ],
+                    ),
                   ),
-
-                  const SizedBox(height: 24),
-
-                  // Statistics remain above the main card.
-                  _buildStatsGrid(
-                    context,
-                    width: constraints.maxWidth - 48,
-                    customers: customers,
+                  const SizedBox(width: 16),
+                  AppPrimaryButton(
+                    label: 'Add New Customer',
+                    icon: Icons.person_add,
+                    onPressed: () => ShellScope.of(context).openAddCustomer(),
                   ),
-
-                  const SizedBox(height: 24),
-
-                  // Recent orders fills the remaining height.
-                  Expanded(child: _buildRecentOrdersCard(context, customers)),
                 ],
               ),
-            );
-          },
+
+              const SizedBox(height: 24),
+
+              // Statistics remain above the main card.
+              _buildStatsGrid(
+                context,
+                width: constraints.maxWidth - 48,
+                customers: customers,
+              ),
+
+              const SizedBox(height: 24),
+
+              Expanded(child: _buildRecentOrdersCard(context, customers)),
+            ],
+          ),
         );
       },
     );
@@ -370,7 +367,7 @@ class DashboardScreen extends StatelessWidget {
     final p = AppPalette.of(context);
     final sortedCustomers = [...customers]
       ..sort((a, b) => b.orderDate.compareTo(a.orderDate));
-    const pageSize = 5;
+    const pageSize = 8;
     final recent = sortedCustomers.take(pageSize).toList();
     const cols = <({String label, int flex})>[
       (label: 'CUSTOMER ID', flex: 12),

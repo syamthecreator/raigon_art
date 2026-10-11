@@ -12,12 +12,11 @@ import 'package:raigon_art/features/customers/presentation/widgets/customer_view
 import 'package:raigon_art/core/utils/csv_export.dart';
 import 'package:raigon_art/core/widgets/app_dropdown.dart';
 import 'package:raigon_art/core/widgets/app_snackbar.dart';
-import 'package:raigon_art/features/customers/data/customer_csv.dart';
 import 'package:raigon_art/features/customers/models/customer_model.dart';
-import 'package:raigon_art/features/customers/data/customer_store.dart';
 import 'package:raigon_art/features/customers/presentation/widgets/customers_table.dart';
 import 'package:raigon_art/core/models/status.dart';
 import 'package:raigon_art/core/widgets/shell_scope.dart';
+import 'package:raigon_art/features/customers/providers/customer_provider.dart';
 
 enum SortOption {
   newest('Newest First'),
@@ -43,34 +42,37 @@ class _CustomersScreenState extends State<CustomersScreen> {
 
   Future<void> _edit(Customer c) => showEditCustomerDialog(context, c);
 
-  Future<void> _delete(Customer c) async {
-    final ok = await showDeleteCustomerDialog(context, c);
+  Future<void> _delete(Customer customer) async {
+    final ok = await showDeleteCustomerDialog(context, customer);
+
     if (!ok || !mounted) return;
-    CustomerStore.remove(c.id);
-    AppSnackBar.success(context, 'Customer deleted successfully.');
-  }
 
-  @override
-  void initState() {
-    super.initState();
-    CustomerStore.customers.addListener(_onStoreChanged);
-  }
+    try {
+      await context.read<CustomerProvider>().remove(customer.id);
 
-  void _onStoreChanged() {
-    if (mounted) setState(() {});
+      if (mounted) {
+        AppSnackBar.success(context, 'Customer deleted successfully.');
+      }
+    } catch (error) {
+      if (mounted) {
+        AppSnackBar.error(context, 'Could not delete customer. Try again.');
+      }
+    }
   }
 
   @override
   void dispose() {
-    CustomerStore.customers.removeListener(_onStoreChanged);
     _searchCtrl.dispose();
     super.dispose();
   }
 
   List<Customer> get _filtered {
     final q = _searchCtrl.text.trim().toLowerCase();
-    final list = CustomerStore.customers.value.where((c) {
+    final provider = context.read<CustomerProvider>();
+
+    final list = provider.customers.where((c) {
       final statusOk = _status == null || c.status == _status;
+
       final searchOk =
           q.isEmpty ||
           [
@@ -79,9 +81,11 @@ class _CustomersScreenState extends State<CustomersScreen> {
             c.phone,
             c.city,
             c.address,
-          ].any((s) => s.toLowerCase().contains(q));
+          ].any((value) => value.toLowerCase().contains(q));
+
       return statusOk && searchOk;
     }).toList();
+
     switch (_sort) {
       case SortOption.newest:
         list.sort((a, b) => b.orderDate.compareTo(a.orderDate));
@@ -94,6 +98,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
       case SortOption.amount:
         list.sort((a, b) => b.total.compareTo(a.total));
     }
+
     return list;
   }
 
@@ -104,7 +109,11 @@ class _CustomersScreenState extends State<CustomersScreen> {
       return;
     }
     try {
-      await downloadCsv(csvFileName(), buildCustomersCsv(list));
+      final provider = context.read<CustomerProvider>();
+      await downloadCsv(
+        provider.csvFileName(),
+        provider.buildCustomersCsv(list),
+      );
       if (!mounted) return;
       AppSnackBar.success(context, 'Customer data exported successfully.');
     } catch (_) {
@@ -115,8 +124,10 @@ class _CustomersScreenState extends State<CustomersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<CustomerProvider>();
     final pagination = context.watch<PaginationProvider>();
     final p = AppPalette.of(context);
+
     final all = _filtered;
     final pageItems = pagination.paginate(all);
 

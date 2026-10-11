@@ -6,6 +6,8 @@ import 'package:raigon_art/app/app_router.dart';
 import 'package:raigon_art/core/provider/pagination_provider.dart';
 import 'package:raigon_art/core/theme/theme_controller.dart';
 import 'package:raigon_art/features/authentication/providers/auth_provider.dart';
+import 'package:raigon_art/features/customers/providers/customer_provider.dart';
+import 'package:raigon_art/features/messaging_automation/providers/messaging_automation_provider.dart';
 
 class RaigonartApp extends StatelessWidget {
   const RaigonartApp({super.key});
@@ -26,6 +28,8 @@ class RaigonartApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider<AuthProvider>(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => PaginationProvider()),
+        ChangeNotifierProvider(create: (_) => CustomerProvider()),
+        ChangeNotifierProvider(create: (_) => MessagingAutomationProvider()),
       ],
       child: AnnotatedRegion<SystemUiOverlayStyle>(
         value: const SystemUiOverlayStyle(

@@ -3,65 +3,95 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:raigon_art/features/customers/models/customer_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
+/// Local storage contract. This can be replaced with Firebase later.
 abstract class CustomerRepository {
   Future<List<Customer>> getAll();
   Future<void> upsert(Customer customer);
   Future<void> delete(String id);
 }
 
+/// SharedPreferences implementation.
 class LocalCustomerRepository implements CustomerRepository {
-  static const _key = 'raigon_customers_v1';
+  static const String _key = 'raigon_customers_v1';
 
-  Future<void> _queue = Future.value();
+  Future<void> _queue = Future<void>.value();
 
   Future<List<Customer>> _read() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_key);
+
     if (raw == null || raw.isEmpty) return [];
+
     try {
-      final list = jsonDecode(raw) as List;
+      final decoded = jsonDecode(raw) as List;
+
       return [
-        for (final e in list)
-          Customer.fromJson(Map<String, dynamic>.from(e as Map)),
+        for (final item in decoded)
+          Customer.fromJson(Map<String, dynamic>.from(item as Map)),
       ];
-    } catch (e, st) {
-      debugPrint('Failed to read customers: $e\n$st');
-      return [];
+    } catch (error, stackTrace) {
+      debugPrint('Failed to read customers: $error\n$stackTrace');
+      rethrow;
     }
   }
 
-  Future<void> _write(List<Customer> list) async {
+  Future<void> _write(List<Customer> customers) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_key, jsonEncode([for (final c in list) c.toJson()]));
+
+    final saved = await prefs.setString(
+      _key,
+      jsonEncode([for (final customer in customers) customer.toJson()]),
+    );
+
+    if (!saved) {
+      throw StateError('Could not save customers locally.');
+    }
   }
 
   Future<void> _enqueue(Future<void> Function() job) {
-    _queue = _queue.then((_) => job()).catchError((Object e, StackTrace st) {
-      debugPrint('Customer save failed: $e\n$st');
-    });
-    return _queue;
+    final next = _queue.then((_) => job());
+
+    // Keep the queue usable after a failed write, but return the
+    // error to the caller so the UI can handle it.
+    _queue = next.then<void>(
+      (_) {},
+      onError: (Object error, StackTrace stackTrace) {
+        debugPrint('Customer persistence failed: $error');
+      },
+    );
+
+    return next;
   }
 
   @override
-  Future<List<Customer>> getAll() => _read();
+  Future<List<Customer>> getAll() async {
+    await _queue;
+    return _read();
+  }
 
   @override
-  Future<void> upsert(Customer customer) => _enqueue(() async {
-    final list = await _read();
-    final i = list.indexWhere((c) => c.id == customer.id);
-    if (i == -1) {
-      list.insert(0, customer);
-    } else {
-      list[i] = customer;
-    }
-    await _write(list);
-  });
+  Future<void> upsert(Customer customer) {
+    return _enqueue(() async {
+      final list = await _read();
+      final index = list.indexWhere((c) => c.id == customer.id);
+
+      if (index == -1) {
+        list.insert(0, customer);
+      } else {
+        list[index] = customer;
+      }
+
+      await _write(list);
+    });
+  }
 
   @override
-  Future<void> delete(String id) => _enqueue(() async {
-    final list = await _read()
-      ..removeWhere((c) => c.id == id);
-    await _write(list);
-  });
+  Future<void> delete(String id) {
+    return _enqueue(() async {
+      final list = await _read()
+        ..removeWhere((customer) => customer.id == id);
+
+      await _write(list);
+    });
+  }
 }

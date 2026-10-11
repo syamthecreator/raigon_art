@@ -54,7 +54,7 @@ class _AppShellState extends State<AppShell> {
     NavDestination.photoCollection => const PhotoCollectionScreen(),
     NavDestination.frameSizes => const FrameSizesScreen(),
     NavDestination.reports => const ReportsScreen(),
-    NavDestination.settings => const SettingsScreen(),
+    NavDestination.profile => const ProfileScreen(),
 
     // ignore: unreachable_switch_case
     _ => _PlaceholderScreen(title: _current.label),

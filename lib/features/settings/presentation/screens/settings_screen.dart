@@ -1,97 +1,517 @@
-
 import 'package:flutter/material.dart';
 import 'package:raigon_art/core/constants/asset_constants.dart';
 import 'package:raigon_art/core/theme/app_colors.dart';
 import 'package:raigon_art/core/theme/app_palette.dart';
 
-class SettingsScreen extends StatelessWidget {
-  const SettingsScreen({super.key});
+/// Read-only business profile for Raigon Arts (photo frames & framing shop).
+class ProfileScreen extends StatelessWidget {
+  const ProfileScreen({super.key});
 
+  // ── Contact ──
   static const String _businessName = 'Raigon Arts';
+  static const String _tagline = 'Photo Frames & Custom Framing';
   static const String _businessPhone = '+91 8921348433';
   static const String _businessEmail = 'orders@raigonarts.com';
-  static const String _businessAddress =
-      'Main Workshop, MG Road, Overbridge Junction, '
-      'Trivandrum, Kerala -695001';
+
+  // ── Business details (TODO: edit these to your real values) ──
+  static const String _businessType = 'Photo Frames & Framing Workshop';
+  static const String _specialization = 'Custom & Ready-made Frames';
+  static const String _materials = 'Wood, Metal, Acrylic, Glass';
+  static const String _orderTypes = 'Walk-in & Custom Orders';
+  static const String _gstin = 'Not added';
+
+  static const List<String> _tags = [
+    'Custom Framing',
+    'Ready-made Frames',
+    'Wall Décor',
+  ];
+
+  static const List<_Service> _services = [
+    _Service(
+      icon: Icons.photo_size_select_actual_outlined,
+      title: 'Custom Photo Framing',
+      desc: 'Frames made to your photo size, style and finish.',
+    ),
+    _Service(
+      icon: Icons.crop_original_outlined,
+      title: 'Ready-made Frames',
+      desc: 'Standard sizes available for instant pickup.',
+    ),
+    _Service(
+      icon: Icons.palette_outlined,
+      title: 'Canvas & Wall Art',
+      desc: 'Canvas stretching, art framing and wall décor pieces.',
+    ),
+    _Service(
+      icon: Icons.workspace_premium_outlined,
+      title: 'Certificate Framing',
+      desc: 'Certificates, documents and awards framed neatly.',
+    ),
+    _Service(
+      icon: Icons.print_outlined,
+      title: 'Photo Printing',
+      desc: 'Photo prints and enlargements ready for framing.',
+    ),
+    _Service(
+      icon: Icons.build_outlined,
+      title: 'Repair & Restoration',
+      desc: 'Frame repair, glass replacement and re-mounting.',
+    ),
+  ];
+
+  // Weekday: 1 = Monday ... 7 = Sunday (matches DateTime.weekday).
+  static const List<_Hours> _hours = [
+    _Hours(1, 'Monday', '9:30 AM – 8:00 PM'),
+    _Hours(2, 'Tuesday', '9:30 AM – 8:00 PM'),
+    _Hours(3, 'Wednesday', '9:30 AM – 8:00 PM'),
+    _Hours(4, 'Thursday', '9:30 AM – 8:00 PM'),
+    _Hours(5, 'Friday', '9:30 AM – 8:00 PM'),
+    _Hours(6, 'Saturday', '9:30 AM – 8:00 PM'),
+    _Hours(7, 'Sunday', 'Closed', closed: true),
+  ];
+
+  static const List<_Step> _steps = [
+    _Step('Choose', 'Pick frame style, colour and glass type.'),
+    _Step('Measure', 'Photo size and mount are confirmed.'),
+    _Step('Craft', 'Frame is cut, assembled and finished.'),
+    _Step('Deliver', 'Ready for pickup or delivery.'),
+  ];
 
   @override
   Widget build(BuildContext context) {
     final p = AppPalette.of(context);
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(24, 28, 24, 32),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _title(p),
+          const SizedBox(height: 24),
+          Expanded(
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(26),
+              decoration: p.card(radius: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _heroCard(p),
+                          const SizedBox(height: 20),
+                          _twoColumn(
+                            _infoCard(
+                              p,
+                              title: 'CONTACT',
+                              rows: const [
+                                _InfoItem(
+                                  icon: Icons.phone_outlined,
+                                  label: 'Phone',
+                                  value: _businessPhone,
+                                ),
+                                _InfoItem(
+                                  icon: Icons.mail_outline,
+                                  label: 'Email',
+                                  value: _businessEmail,
+                                ),
+                              ],
+                            ),
+                            _infoCard(
+                              p,
+                              title: 'LOCATION',
+                              rows: const [
+                                _InfoItem(
+                                  icon: Icons.location_on_outlined,
+                                  label: 'Workshop Address',
+                                  value:
+                                      'Main Workshop, MG Road, Overbridge Junction',
+                                ),
+                                _InfoItem(
+                                  icon: Icons.location_city_outlined,
+                                  label: 'City & State',
+                                  value: 'Trivandrum, Kerala',
+                                ),
+                                _InfoItem(
+                                  icon: Icons.markunread_mailbox_outlined,
+                                  label: 'PIN Code',
+                                  value: '695001',
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          _servicesCard(p),
+                          const SizedBox(height: 20),
+                          _twoColumn(
+                            _hoursCard(p),
+                            _infoCard(
+                              p,
+                              title: 'BUSINESS DETAILS',
+                              rows: const [
+                                _InfoItem(
+                                  icon: Icons.storefront_outlined,
+                                  label: 'Business Type',
+                                  value: _businessType,
+                                ),
+                                _InfoItem(
+                                  icon: Icons.star_outline,
+                                  label: 'Specialization',
+                                  value: _specialization,
+                                ),
+                                _InfoItem(
+                                  icon: Icons.layers_outlined,
+                                  label: 'Frame Materials',
+                                  value: _materials,
+                                ),
+                                _InfoItem(
+                                  icon: Icons.shopping_bag_outlined,
+                                  label: 'Order Types',
+                                  value: _orderTypes,
+                                ),
+                                _InfoItem(
+                                  icon: Icons.receipt_long_outlined,
+                                  label: 'GSTIN',
+                                  value: _gstin,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          _processCard(p),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Divider(color: p.border, height: 1),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.auto_awesome,
+                        size: 16,
+                        color: AppColors.gold,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Powered by Raigon Arts',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: p.textMuted,
+                        ),
+                      ),
+                      const Spacer(),
+                      Flexible(
+                        child: Text(
+                          'Business Profile',
+                          textAlign: TextAlign.end,
+                          style: TextStyle(fontSize: 12, color: p.textMuted),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ───────────────────────── Layout helpers ─────────────────────────
+
+  /// Side by side on wide screens, stacked on narrow ones.
+  Widget _twoColumn(Widget left, Widget right) {
+    return LayoutBuilder(
+      builder: (context, c) {
+        if (c.maxWidth < 760) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [left, const SizedBox(height: 20), right],
+          );
+        }
+        return IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: left),
+              const SizedBox(width: 20),
+              Expanded(child: right),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// Wraps [children] into an evenly sized grid of [columns] columns.
+  Widget _grid(double maxWidth, int columns, List<Widget> children,
+      {double gap = 14}) {
+    final w = (maxWidth - gap * (columns - 1)) / columns;
+    return Wrap(
+      spacing: gap,
+      runSpacing: gap,
+      children: [for (final c in children) SizedBox(width: w, child: c)],
+    );
+  }
+
+  Widget _cardShell(AppPalette p, String title, Widget child) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: p.card(radius: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _titleRow(p),
-          const SizedBox(height: 26),
+          Row(
+            children: [
+              Container(
+                width: 3,
+                height: 14,
+                decoration: BoxDecoration(
+                  color: AppColors.gold,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1,
+                  color: p.textMuted,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          child,
+        ],
+      ),
+    );
+  }
+
+  Widget _iconBox(AppPalette p, IconData icon, {double size = 40}) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: AppColors.gold.withValues(alpha: p.isDark ? 0.2 : 0.12),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Icon(icon, size: size / 2, color: AppColors.gold),
+    );
+  }
+
+  // ───────────────────────── Title ─────────────────────────
+
+  Widget _title(AppPalette p) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Business Profile',
+          style: TextStyle(
+            fontSize: 26,
+            fontWeight: FontWeight.w800,
+            color: p.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Your shop details as shown on orders and receipts',
+          style: TextStyle(fontSize: 14.5, color: p.textMuted),
+        ),
+      ],
+    );
+  }
+
+  // ───────────────────────── Hero Card ─────────────────────────
+
+  Widget _heroCard(AppPalette p) {
+    final chipFg = p.isDark ? AppColors.gold : AppPalette.statusGold;
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: p.card(radius: 16),
+      child: Row(
+        children: [
           Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(26),
-            decoration: p.card(radius: 16),
+            width: 92,
+            height: 92,
+            decoration: BoxDecoration(
+              color: p.avatarBg,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(
+                color: AppColors.gold.withValues(alpha: 0.6),
+                width: 2,
+              ),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Image.asset(AssetConstants.raigonLogo, fit: BoxFit.cover),
+          ),
+          const SizedBox(width: 22),
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _sectionHeader(p),
-                const SizedBox(height: 18),
-                _logoCard(p),
-                const SizedBox(height: 18),
-                LayoutBuilder(
-                  builder: (context, c) {
-                    final nameField = _labeled(
-                      p,
-                      'Business Name',
-                      _field(p, value: _businessName),
-                    );
-
-                    final phoneField = _labeled(
-                      p,
-                      'Business Phone',
-                      _field(
-                        p,
-                        value: _businessPhone,
-                        keyboard: TextInputType.phone,
-                      ),
-                    );
-
-                    if (c.maxWidth < 700) {
-                      return Column(
-                        children: [
-                          nameField,
-                          const SizedBox(height: 18),
-                          phoneField,
-                        ],
-                      );
-                    }
-
-                    return Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(child: nameField),
-                        const SizedBox(width: 21),
-                        Expanded(child: phoneField),
-                      ],
-                    );
-                  },
-                ),
-                const SizedBox(height: 18),
-                _labeled(
-                  p,
-                  'Business Email Address',
-                  _field(
-                    p,
-                    value: _businessEmail,
-                    keyboard: TextInputType.emailAddress,
+                Text(
+                  _businessName,
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    color: p.textPrimary,
                   ),
                 ),
-                const SizedBox(height: 18),
-                _labeled(
-                  p,
-                  'Physical Workshop Address',
-                  _field(
-                    p,
-                    value: _businessAddress,
-                    multiline: true,
+                const SizedBox(height: 4),
+                Text(
+                  _tagline,
+                  style: TextStyle(fontSize: 14.5, color: p.textMuted),
+                ),
+                const SizedBox(height: 14),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final t in _tags)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.gold.withValues(
+                            alpha: p.isDark ? 0.25 : 0.14,
+                          ),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          t,
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                            color: chipFg,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ───────────────────────── Info Card ─────────────────────────
+
+  Widget _infoCard(
+    AppPalette p, {
+    required String title,
+    required List<_InfoItem> rows,
+  }) {
+    final children = <Widget>[];
+    for (var i = 0; i < rows.length; i++) {
+      if (i > 0) {
+        children.add(Divider(color: p.border, height: 28));
+      }
+      children.add(_infoRow(p, rows[i]));
+    }
+
+    return _cardShell(
+      p,
+      title,
+      Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),
+    );
+  }
+
+  Widget _infoRow(AppPalette p, _InfoItem item) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _iconBox(p, item.icon),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                item.label,
+                style: TextStyle(fontSize: 12.5, color: p.textMuted),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                item.value,
+                style: TextStyle(
+                  fontSize: 15.5,
+                  height: 1.4,
+                  fontWeight: FontWeight.w600,
+                  color: p.textPrimary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ───────────────────────── Services ─────────────────────────
+
+  Widget _servicesCard(AppPalette p) {
+    return _cardShell(
+      p,
+      'SERVICES WE OFFER',
+      LayoutBuilder(
+        builder: (context, c) {
+          final cols = c.maxWidth < 560 ? 1 : (c.maxWidth < 960 ? 2 : 3);
+          return _grid(c.maxWidth, cols, [
+            for (final s in _services) _serviceTile(p, s),
+          ]);
+        },
+      ),
+    );
+  }
+
+  Widget _serviceTile(AppPalette p, _Service s) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: p.isDark ? p.surface.withValues(alpha: 0.45) : p.pageBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: p.border),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _iconBox(p, s.icon),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  s.title,
+                  style: TextStyle(
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w700,
+                    color: p.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  s.desc,
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    height: 1.45,
+                    color: p.textMuted,
                   ),
                 ),
               ],
@@ -102,304 +522,177 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  // ───────────────────────── Title ─────────────────────────
+  // ───────────────────────── Business Hours ─────────────────────────
 
-  Widget _titleRow(AppPalette p) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Shop Settings',
-          style: TextStyle(
-            fontSize: 26,
-            fontWeight: FontWeight.w800,
-            color: p.textPrimary,
+  Widget _hoursCard(AppPalette p) {
+    final today = DateTime.now().weekday;
+    final rows = <Widget>[];
+
+    for (var i = 0; i < _hours.length; i++) {
+      final h = _hours[i];
+      final isToday = h.weekday == today;
+
+      if (i > 0) rows.add(const SizedBox(height: 6));
+
+      rows.add(
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: isToday
+                ? AppColors.gold.withValues(alpha: p.isDark ? 0.2 : 0.12)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
           ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          'Configure business profile, workshop details, and security credentials',
-          style: TextStyle(
-            fontSize: 14.5,
-            color: p.textMuted,
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ───────────────────────── Section Header ─────────────────────────
-
-  Widget _sectionHeader(AppPalette p) {
-    final fg = p.isDark ? AppColors.gold : p.textPrimary;
-
-    return Container(
-      height: 42,
-      decoration: BoxDecoration(
-        color: p.isDark
-            ? AppColors.gold.withValues(alpha: 0.2)
-            : p.tableHeaderBg,
-        border: const Border(
-          left: BorderSide(
-            color: AppColors.gold,
-            width: 3,
-          ),
-        ),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 18),
-      child: Row(
-        children: [
-          Icon(
-            Icons.domain,
-            size: 18,
-            color: fg,
-          ),
-          const SizedBox(width: 10),
-          Text(
-            'BUSINESS & WORKSHOP PROFILE',
-            style: TextStyle(
-              fontSize: 14.5,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.8,
-              color: fg,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ───────────────────────── Logo Card ─────────────────────────
-
-  Widget _logoCard(AppPalette p) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 28,
-        vertical: 24,
-      ),
-      decoration: BoxDecoration(
-        color: p.isDark
-            ? const Color(0xFF383A52)
-            : p.surface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: p.border),
-      ),
-      child: LayoutBuilder(
-        builder: (context, c) {
-          final compact = c.maxWidth < 760;
-
-          final info = Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
+          child: Row(
             children: [
-              _logoTile(p),
-              const SizedBox(width: 20),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Wrap(
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      spacing: 12,
-                      runSpacing: 6,
-                      children: [
-                        Text(
-                          'Workshop Brand Logo',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: p.textPrimary,
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.gold.withValues(
-                              alpha: p.isDark ? 0.28 : 0.16,
-                            ),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            'PNG, JPG, WEBP',
-                            style: TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w600,
-                              color: p.isDark
-                                  ? AppColors.gold
-                                  : AppPalette.statusGold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(
-                        maxWidth: 470,
-                      ),
-                      child: Text(
-                        'Official Raigon Arts logo for invoices, framing job slips, customer receipts, and workshop headers.',
-                        style: TextStyle(
-                          fontSize: 13.5,
-                          height: 1.45,
-                          color: p.textMuted,
-                        ),
-                      ),
-                    ),
-                  ],
+              Text(
+                h.day,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
+                  color: p.textPrimary,
+                ),
+              ),
+              if (isToday) ...[
+                const SizedBox(width: 8),
+                Text(
+                  'TODAY',
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.8,
+                    color: p.isDark ? AppColors.gold : AppPalette.statusGold,
+                  ),
+                ),
+              ],
+              const Spacer(),
+              Text(
+                h.time,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: h.closed ? const Color(0xFFE5484D) : p.textPrimary,
                 ),
               ),
             ],
-          );
+          ),
+        ),
+      );
+    }
 
-          if (compact) {
-            return info;
-          }
+    return _cardShell(
+      p,
+      'BUSINESS HOURS',
+      Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: rows),
+    );
+  }
 
-          return Row(
-            children: [
-              Expanded(child: info),
-            ],
-          );
+  // ───────────────────────── Order Process ─────────────────────────
+
+  Widget _processCard(AppPalette p) {
+    return _cardShell(
+      p,
+      'HOW A FRAMING ORDER WORKS',
+      LayoutBuilder(
+        builder: (context, c) {
+          final cols = c.maxWidth < 560 ? 1 : (c.maxWidth < 900 ? 2 : 4);
+          return _grid(c.maxWidth, cols, [
+            for (var i = 0; i < _steps.length; i++) _stepTile(p, i + 1, _steps[i]),
+          ]);
         },
       ),
     );
   }
 
-  // ───────────────────────── Logo Tile ─────────────────────────
-
-  Widget _logoTile(AppPalette p) {
-    return SizedBox(
-      width: 94,
-      height: 94,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Positioned(
-            left: 0,
-            top: 0,
-            child: Container(
-              width: 88,
-              height: 88,
-              decoration: BoxDecoration(
-                color: p.avatarBg,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: const Color(0xFFCFCBF0),
-                  width: 2,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.12),
-                    blurRadius: 12,
-                    offset: const Offset(0, 5),
-                  ),
-                ],
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: Image.asset(
-                AssetConstants.raigonLogo,
-                fit: BoxFit.cover,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ───────────────────────── Labeled Field ─────────────────────────
-
-  Widget _labeled(
-    AppPalette p,
-    String label,
-    Widget field,
-  ) {
-    return Column(
+  Widget _stepTile(AppPalette p, int number, _Step s) {
+    return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text.rich(
-          TextSpan(
-            text: label,
-            style: TextStyle(
-              fontSize: 14.5,
-              fontWeight: FontWeight.w600,
-              color: p.textPrimary,
+        Container(
+          width: 32,
+          height: 32,
+          alignment: Alignment.center,
+          decoration: const BoxDecoration(
+            color: AppColors.gold,
+            shape: BoxShape.circle,
+          ),
+          child: Text(
+            '$number',
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
             ),
-            children: const [
-              TextSpan(
-                text: '  *',
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                s.title,
                 style: TextStyle(
-                  color: Color(0xFFE5484D),
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w700,
+                  color: p.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                s.desc,
+                style: TextStyle(
+                  fontSize: 12.5,
+                  height: 1.45,
+                  color: p.textMuted,
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 10),
-        field,
       ],
     );
   }
+}
 
-  // ───────────────────────── Read-only Field ─────────────────────────
+// ───────────────────────── Data models ─────────────────────────
 
-  Widget _field(
-    AppPalette p, {
-    required String value,
-    TextInputType keyboard = TextInputType.text,
-    bool multiline = false,
-  }) {
-    final fill = p.isDark ? p.surface : p.pageBg;
-    final base = p.isDark
-        ? Colors.white.withValues(alpha: 0.92)
-        : p.border;
+class _InfoItem {
+  const _InfoItem({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
 
-    OutlineInputBorder border(
-      Color color, [
-      double width = 1.2,
-    ]) {
-      return OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(
-          color: color,
-          width: width,
-        ),
-      );
-    }
+  final IconData icon;
+  final String label;
+  final String value;
+}
 
-    return SizedBox(
-      height: multiline ? 80 : 46,
-      child: TextField(
-        readOnly: true,
-        controller: TextEditingController(text: value),
-        keyboardType: multiline
-            ? TextInputType.multiline
-            : keyboard,
-        maxLines: multiline ? null : 1,
-        expands: multiline,
-        textAlignVertical:
-            multiline ? TextAlignVertical.top : null,
-        style: TextStyle(
-          fontSize: 15,
-          color: p.textPrimary,
-        ),
-        decoration: InputDecoration(
-          filled: true,
-          fillColor: fill,
-          isDense: true,
-          contentPadding: EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: multiline ? 14 : 13,
-          ),
-          enabledBorder: border(base),
-          focusedBorder: border(base),
-        ),
-      ),
-    );
-  }
+class _Service {
+  const _Service({
+    required this.icon,
+    required this.title,
+    required this.desc,
+  });
+
+  final IconData icon;
+  final String title;
+  final String desc;
+}
+
+class _Hours {
+  const _Hours(this.weekday, this.day, this.time, {this.closed = false});
+
+  final int weekday;
+  final String day;
+  final String time;
+  final bool closed;
+}
+
+class _Step {
+  const _Step(this.title, this.desc);
+
+  final String title;
+  final String desc;
 }

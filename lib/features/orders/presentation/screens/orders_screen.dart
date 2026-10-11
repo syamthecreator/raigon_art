@@ -124,6 +124,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
   @override
   Widget build(BuildContext context) {
     final p = AppPalette.of(context);
+
     return ValueListenableBuilder<List<Customer>>(
       valueListenable: CustomerStore.customers,
       builder: (context, all, _) {
@@ -131,6 +132,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
             s == null ? all.length : all.where((c) => _statusOf(c) == s).length;
 
         final q = _query.trim().toLowerCase();
+
         final rows = all.where((c) {
           if (_filter != null && _statusOf(c) != _filter) {
             return false;
@@ -150,37 +152,46 @@ class _OrdersScreenState extends State<OrdersScreen> {
             .take(_pageSize)
             .toList();
 
-        return SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24, 28, 24, 32),
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _titleRow(p),
-              const SizedBox(height: 28),
-              _tabs(p, count),
               const SizedBox(height: 24),
-              Container(
-                decoration: p.card(radius: 16),
-                clipBehavior: Clip.antiAlias,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: _searchField(p),
-                    ),
-                    _table(p, pageRows),
+              _tabs(p, count),
+              const SizedBox(height: 20),
 
-                    AppPaginationFooter(
-                      totalItems: rows.length,
-                      page: currentPage,
-                      pageSize: _pageSize,
-                      itemLabel: 'orders',
-                      onPageChanged: (newPage) {
-                        setState(() => _page = newPage);
-                      },
-                    ),
-                  ],
+              // Card fills the remaining screen height.
+              Expanded(
+                child: Container(
+                  width: double.infinity,
+                  decoration: p.card(radius: 16),
+                  clipBehavior: Clip.antiAlias,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Search toolbar.
+                      Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: _searchField(p),
+                      ),
+
+                      // Table occupies the available space.
+                      Expanded(child: _table(p, pageRows)),
+
+                      // Footer stays at the bottom.
+                      AppPaginationFooter(
+                        totalItems: rows.length,
+                        page: currentPage,
+                        pageSize: _pageSize,
+                        itemLabel: 'orders',
+                        onPageChanged: (newPage) {
+                          setState(() => _page = newPage);
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],

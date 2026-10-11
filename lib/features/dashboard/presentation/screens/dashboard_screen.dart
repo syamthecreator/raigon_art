@@ -25,10 +25,11 @@ class DashboardScreen extends StatelessWidget {
         return LayoutBuilder(
           builder: (context, constraints) {
             return Padding(
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  // Dashboard header stays at the top.
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -64,13 +65,19 @@ class DashboardScreen extends StatelessWidget {
                       ),
                     ],
                   ),
+
                   const SizedBox(height: 24),
+
+                  // Statistics remain above the main card.
                   _buildStatsGrid(
                     context,
                     width: constraints.maxWidth - 48,
                     customers: customers,
                   ),
+
                   const SizedBox(height: 24),
+
+                  // Recent orders fills the remaining height.
                   Expanded(child: _buildRecentOrdersCard(context, customers)),
                 ],
               ),

@@ -682,37 +682,77 @@ class _PhotoCollectionScreenState extends State<PhotoCollectionScreen> {
     final p = AppPalette.of(context);
     final list = _filtered;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(24, 28, 24, 32),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _titleRow(p),
-
-          const SizedBox(height: 22),
-
+          const SizedBox(height: 20),
           _folderCard(p),
+          const SizedBox(height: 20),
+          Expanded(
+            child: Container(
+              width: double.infinity,
+              decoration: p.card(radius: 16),
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (_hasFolder) _searchCard(p, list.length),
 
-          const SizedBox(height: 22),
-
-          if (_hasFolder) _searchCard(p, list.length),
-
-          if (_hasFolder) const SizedBox(height: 22),
-
-          if (_loading)
-            _loadingView(p)
-          else if (_error != null)
-            _errorView(p)
-          else if (!_hasFolder)
-            _selectFolderView(p)
-          else if (list.isEmpty)
-            _emptyView(p)
-          else if (_gridView)
-            _grid(p, list)
-          else
-            _list(p, list),
+                  Expanded(child: _buildCollectionContent(p, list)),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
+    );
+  }
+
+  Widget _buildCollectionContent(AppPalette p, List<PhotoItem> list) {
+    if (_loading) {
+      return Center(child: _loadingView(p));
+    }
+
+    if (_error != null) {
+      return SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: _errorView(p),
+      );
+    }
+
+    if (!_hasFolder) {
+      return SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: _selectFolderView(p),
+      );
+    }
+
+    if (list.isEmpty) {
+      return SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: _emptyView(p),
+      );
+    }
+
+    if (_gridView) {
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: _grid(p, list),
+          );
+        },
+      );
+    }
+
+    // The list keeps its horizontal scrolling while the outer scroll
+    // allows the photo rows to move vertically inside the card.
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: _list(p, list),
     );
   }
 
@@ -1048,7 +1088,7 @@ class _PhotoCollectionScreenState extends State<PhotoCollectionScreen> {
   Widget _searchCard(AppPalette p, int count) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      decoration: p.card(radius: 16),
+      decoration: p.card(radius: 0),
       child: Row(
         children: [
           SizedBox(

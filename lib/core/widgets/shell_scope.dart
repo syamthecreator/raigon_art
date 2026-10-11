@@ -7,7 +7,7 @@ enum NavDestination {
   photoCollection,
   frameSizes,
   reports,
-  settings,
+  profile,
 }
 
 extension NavDestinationX on NavDestination {
@@ -18,7 +18,7 @@ extension NavDestinationX on NavDestination {
     NavDestination.photoCollection => 'Photo Collection',
     NavDestination.frameSizes => 'Frame Sizes',
     NavDestination.reports => 'Reports',
-    NavDestination.settings => 'Settings',
+    NavDestination.profile => 'Profile',
   };
 
   IconData get icon => switch (this) {
@@ -28,8 +28,7 @@ extension NavDestinationX on NavDestination {
     NavDestination.photoCollection => Icons.photo_library,
     NavDestination.frameSizes => Icons.straighten,
     NavDestination.reports => Icons.bar_chart,
-    NavDestination.settings => Icons.tune,
-  };
+NavDestination.profile => Icons.person_outline,  };
 }
 
 class ShellScope extends InheritedWidget {

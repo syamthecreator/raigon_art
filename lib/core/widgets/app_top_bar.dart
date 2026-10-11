@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:raigon_art/core/theme/app_colors.dart';
 import 'package:raigon_art/core/theme/app_palette.dart' show AppPalette;
 import 'package:raigon_art/core/theme/theme_controller.dart';
+import 'package:raigon_art/core/widgets/shell_scope.dart';
 
 class AppTopBar extends StatelessWidget {
   const AppTopBar({
@@ -79,21 +80,35 @@ class AppTopBar extends StatelessWidget {
             ],
           ),
           const SizedBox(width: 12),
-          Container(
-            width: 46,
-            height: 46,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: p.avatarBg,
-              border: Border.all(color: AppColors.gold, width: 2),
-            ),
-            child: const Text(
-              'RA',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: AppColors.gold,
+
+          Tooltip(
+            message: 'Business Profile',
+            child: Material(
+              color: Colors.transparent,
+              shape: const CircleBorder(),
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: () {
+                  ShellScope.of(context).goTo(NavDestination.profile);
+                },
+                child: Container(
+                  width: 46,
+                  height: 46,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: p.avatarBg,
+                    border: Border.all(color: AppColors.gold, width: 2),
+                  ),
+                  child: const Text(
+                    'RA',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.gold,
+                    ),
+                  ),
+                ),
               ),
             ),
           ),

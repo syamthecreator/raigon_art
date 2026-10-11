@@ -145,23 +145,29 @@ class _FrameSizesScreenState extends State<FrameSizesScreen> {
     AppSnackBar.success(context, 'Frame size deleted successfully.');
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final p = AppPalette.of(context);
-    final list = _filtered;
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(24, 28, 24, 32),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _titleRow(p),
-          const SizedBox(height: 26),
-          Container(
+
+@override
+Widget build(BuildContext context) {
+  final p = AppPalette.of(context);
+  final list = _filtered;
+
+  return Padding(
+    padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _titleRow(p),
+        const SizedBox(height: 24),
+
+        Expanded(
+          child: Container(
+            width: double.infinity,
             decoration: p.card(radius: 16),
             clipBehavior: Clip.antiAlias,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // Search and total sizes.
                 Padding(
                   padding: const EdgeInsets.all(20),
                   child: Row(
@@ -170,7 +176,9 @@ class _FrameSizesScreenState extends State<FrameSizesScreen> {
                         width: 340,
                         height: 44,
                         child: TextField(
-                          onChanged: (v) => setState(() => _query = v),
+                          onChanged: (v) {
+                            setState(() => _query = v);
+                          },
                           cursorColor: p.textPrimary,
                           style: TextStyle(
                             fontSize: 14.5,
@@ -188,9 +196,8 @@ class _FrameSizesScreenState extends State<FrameSizesScreen> {
                               size: 22,
                               color: p.textMuted,
                             ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              vertical: 12,
-                            ),
+                            contentPadding:
+                                const EdgeInsets.symmetric(vertical: 12),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
                               borderSide: BorderSide(color: p.border),
@@ -208,7 +215,10 @@ class _FrameSizesScreenState extends State<FrameSizesScreen> {
                       Text.rich(
                         TextSpan(
                           text: 'Total Sizes: ',
-                          style: TextStyle(fontSize: 14.5, color: p.textMuted),
+                          style: TextStyle(
+                            fontSize: 14.5,
+                            color: p.textMuted,
+                          ),
                           children: [
                             TextSpan(
                               text: '${FrameSizeStore.sizes.value.length}',
@@ -223,14 +233,22 @@ class _FrameSizesScreenState extends State<FrameSizesScreen> {
                     ],
                   ),
                 ),
-                _table(p, list),
+
+                // Table uses the remaining height.
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: _table(p, list),
+                  ),
+                ),
               ],
             ),
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
+
 
   Widget _titleRow(AppPalette p) {
     return Row(

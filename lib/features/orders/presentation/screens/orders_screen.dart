@@ -2,16 +2,17 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:provider/provider.dart';
 import 'package:raigon_art/core/theme/app_colors.dart';
 import 'package:raigon_art/core/theme/app_palette.dart';
 import 'package:raigon_art/core/widgets/app_pagination_footer.dart';
 import 'package:raigon_art/core/widgets/app_primary_button.dart';
 import 'package:raigon_art/features/customers/models/customer_model.dart';
-import 'package:raigon_art/features/customers/data/customer_store.dart';
 import 'package:raigon_art/features/customers/presentation/widgets/add_customer_dialog.dart';
 import 'package:raigon_art/features/customers/presentation/widgets/customer_view_dialog.dart';
 import 'package:raigon_art/core/models/status.dart';
 import 'package:raigon_art/core/widgets/shell_scope.dart';
+import 'package:raigon_art/features/customers/providers/customer_provider.dart';
 
 class OrdersScreen extends StatefulWidget {
   const OrdersScreen({super.key});
@@ -25,6 +26,25 @@ class _OrdersScreenState extends State<OrdersScreen> {
   Status? _filter;
   String _query = '';
   static const int _pageSize = 10;
+  final ScrollController _horizontalController = ScrollController();
+  final ScrollController _verticalController = ScrollController();
+
+  @override
+  void dispose() {
+    _horizontalController.dispose();
+    _verticalController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<CustomerProvider>().init();
+      }
+    });
+  }
 
   int _page = 1;
 
@@ -125,79 +145,93 @@ class _OrdersScreenState extends State<OrdersScreen> {
   Widget build(BuildContext context) {
     final p = AppPalette.of(context);
 
-    return ValueListenableBuilder<List<Customer>>(
-      valueListenable: CustomerStore.customers,
-      builder: (context, all, _) {
-        int count(Status? s) =>
-            s == null ? all.length : all.where((c) => _statusOf(c) == s).length;
+    final customerProvider = context.watch<CustomerProvider>();
 
-        final q = _query.trim().toLowerCase();
+    final all = customerProvider.customers;
 
-        final rows = all.where((c) {
-          if (_filter != null && _statusOf(c) != _filter) {
-            return false;
-          }
+    int count(Status? s) =>
+        s == null ? all.length : all.where((c) => _statusOf(c) == s).length;
 
-          if (q.isEmpty) return true;
+    final q = _query.trim().toLowerCase();
 
-          return c.id.toLowerCase().contains(q) ||
-              c.name.toLowerCase().contains(q);
-        }).toList();
+    final rows = all.where((c) {
+      if (_filter != null && _statusOf(c) != _filter) {
+        return false;
+      }
 
-        final totalPages = math.max(1, (rows.length / _pageSize).ceil());
-        final currentPage = _page.clamp(1, totalPages);
+      if (q.isEmpty) return true;
 
-        final pageRows = rows
-            .skip((currentPage - 1) * _pageSize)
-            .take(_pageSize)
-            .toList();
+      return c.id.toLowerCase().contains(q) || c.name.toLowerCase().contains(q);
+    }).toList();
 
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _titleRow(p),
-              const SizedBox(height: 24),
-              _tabs(p, count),
-              const SizedBox(height: 20),
+    final totalPages = math.max(1, (rows.length / _pageSize).ceil());
 
-              // Card fills the remaining screen height.
-              Expanded(
-                child: Container(
-                  width: double.infinity,
-                  decoration: p.card(radius: 16),
-                  clipBehavior: Clip.antiAlias,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Search toolbar.
-                      Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: _searchField(p),
-                      ),
+    final currentPage = _page.clamp(1, totalPages);
 
-                      // Table occupies the available space.
-                      Expanded(child: _table(p, pageRows)),
+    final pageRows = rows
+        .skip((currentPage - 1) * _pageSize)
+        .take(_pageSize)
+        .toList();
 
-                      // Footer stays at the bottom.
-                      AppPaginationFooter(
-                        totalItems: rows.length,
-                        page: currentPage,
-                        pageSize: _pageSize,
-                        itemLabel: 'orders',
-                        onPageChanged: (newPage) {
-                          setState(() => _page = newPage);
-                        },
-                      ),
-                    ],
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+
+        children: [
+          _titleRow(p),
+
+          const SizedBox(height: 24),
+
+          _tabs(p, count),
+
+          const SizedBox(height: 20),
+
+          // Card fills the remaining screen height.
+          Expanded(
+            child: Container(
+              width: double.infinity,
+
+              decoration: p.card(radius: 16),
+
+              clipBehavior: Clip.antiAlias,
+
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+
+                children: [
+                  // Search toolbar.
+
+                  Padding(
+                    padding: const EdgeInsets.all(20),
+
+                    child: _searchField(p),
                   ),
-                ),
+
+                  // Table occupies the available space.
+                  Expanded(child: _table(p, pageRows)),
+
+                  // Footer stays at the bottom.
+                  AppPaginationFooter(
+                    totalItems: rows.length,
+
+                    page: currentPage,
+
+                    pageSize: _pageSize,
+
+                    itemLabel: 'orders',
+
+                    onPageChanged: (newPage) {
+                      setState(() => _page = newPage);
+                    },
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        );
-      },
+        ],
+      ),
     );
   }
 
@@ -338,49 +372,61 @@ class _OrdersScreenState extends State<OrdersScreen> {
       builder: (context, c) {
         final tableWidth = math.max(c.maxWidth, 1240.0);
 
-        return Scrollbar(
-          thumbVisibility: true,
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: SizedBox(
-              width: tableWidth,
-              height: c.maxHeight,
-              child: Column(
-                children: [
-                  // Keep the table header visible.
-                  _headerRow(p),
-
-                  // Scroll vertically through the order rows.
-                  Expanded(
-                    child: ScrollbarTheme(
-            data: ScrollbarThemeData(
-              thumbColor: const WidgetStatePropertyAll(AppColors.gold),
-              trackColor: WidgetStatePropertyAll(
-                AppColors.gold.withValues(alpha: 0.12),
-              ),
-              thickness: const WidgetStatePropertyAll(6),
-              radius: const Radius.circular(3),
+        return ScrollbarTheme(
+          data: ScrollbarThemeData(
+            thumbColor: const WidgetStatePropertyAll(AppColors.gold),
+            trackColor: WidgetStatePropertyAll(
+              AppColors.gold.withValues(alpha: 0.12),
             ),
-            child: 
-                      
-                      Scrollbar(
+            thickness: const WidgetStatePropertyAll(6),
+            radius: const Radius.circular(3),
+          ),
+          child: Scrollbar(
+            controller: _horizontalController,
+            thumbVisibility: true,
+            trackVisibility: true,
+            notificationPredicate: (notification) =>
+                notification.depth == 0 &&
+                notification.metrics.axis == Axis.horizontal,
+            child: SingleChildScrollView(
+              controller: _horizontalController,
+              primary: false,
+              scrollDirection: Axis.horizontal,
+              child: SizedBox(
+                width: tableWidth,
+                height: c.maxHeight,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Fixed table header.
+                    _headerRow(p),
+
+                    // Vertically scrollable table body.
+                    Expanded(
+                      child: Scrollbar(
+                        controller: _verticalController,
                         thumbVisibility: true,
-                        
+                        trackVisibility: true,
+                        notificationPredicate: (notification) =>
+                            notification.depth == 0 &&
+                            notification.metrics.axis == Axis.vertical,
                         child: SingleChildScrollView(
-                          
+                          controller: _verticalController,
+                          primary: false,
                           scrollDirection: Axis.vertical,
                           child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               if (rows.isEmpty)
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 48,
-                                  ),
-                                  child: Text(
-                                    'No orders found',
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      color: p.textMuted,
+                                SizedBox(
+                                  height: 180,
+                                  child: Center(
+                                    child: Text(
+                                      'No orders found',
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        color: p.textMuted,
+                                      ),
                                     ),
                                   ),
                                 )
@@ -404,18 +450,22 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                     onStatus: (s) => setState(
                                       () => _statusOverride[rows[i].id] = s,
                                     ),
-                                    onView: () =>
-                                        showViewCustomerDialog(context, rows[i]),
-                                    onEdit: () =>
-                                        showEditCustomerDialog(context, rows[i]),
+                                    onView: () => showViewCustomerDialog(
+                                      context,
+                                      rows[i],
+                                    ),
+                                    onEdit: () => showEditCustomerDialog(
+                                      context,
+                                      rows[i],
+                                    ),
                                   ),
                             ],
                           ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

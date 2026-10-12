@@ -5,6 +5,8 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   desktop_drop
   file_saver
+  firebase_auth
+  firebase_core
   url_launcher_windows
 )
 

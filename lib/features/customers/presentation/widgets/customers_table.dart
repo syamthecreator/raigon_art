@@ -79,54 +79,55 @@ class _CustomersTableState extends State<CustomersTable> {
               thickness: const WidgetStatePropertyAll(6),
               radius: const Radius.circular(3),
             ),
-            // Vertical scrollbar: pinned to the right edge of the visible area.
             child: Scrollbar(
-              controller: _vScroll,
+              controller: _scroll,
               thumbVisibility: true,
               trackVisibility: true,
-              notificationPredicate: (n) =>
-                  n.depth == 1 && n.metrics.axis == Axis.vertical,
-              // Horizontal scrollbar: pinned to the bottom edge.
-              child: Scrollbar(
+              child: SingleChildScrollView(
                 controller: _scroll,
-                thumbVisibility: true,
-                trackVisibility: true,
-                child: SingleChildScrollView(
-                  controller: _scroll,
-                  scrollDirection: Axis.horizontal,
-                  child: SizedBox(
-                    width: tableWidth,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Header stays fixed while rows scroll vertically.
-                        _headerRow(p),
-                        Expanded(
-                          child: widget.customers.isEmpty
-                              ? Center(
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.folder_open,
-                                        size: 46,
+                scrollDirection: Axis.horizontal,
+                child: SizedBox(
+                  width: tableWidth,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Fixed table header.
+                      _headerRow(p),
+
+                      // Table body takes the remaining height.
+                      Expanded(
+                        child: widget.customers.isEmpty
+                            ? Center(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.folder_open,
+                                      size: 46,
+                                      color: p.textMuted,
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Text(
+                                      'No customer records match '
+                                      'your filter criteria.',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 15,
                                         color: p.textMuted,
                                       ),
-                                      const SizedBox(height: 10),
-                                      Text(
-                                        'No customer records match '
-                                        'your filter criteria.',
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                          fontSize: 15,
-                                          color: p.textMuted,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                )
-                              : SingleChildScrollView(
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : Scrollbar(
+                                controller: _vScroll,
+                                thumbVisibility: true,
+                                trackVisibility: true,
+                                notificationPredicate: (notification) =>
+                                    notification.metrics.axis == Axis.vertical,
+                                child: SingleChildScrollView(
                                   controller: _vScroll,
+                                  scrollDirection: Axis.vertical,
                                   child: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.stretch,
@@ -140,9 +141,9 @@ class _CustomersTableState extends State<CustomersTable> {
                                     ],
                                   ),
                                 ),
-                        ),
-                      ],
-                    ),
+                              ),
+                      ),
+                    ],
                   ),
                 ),
               ),

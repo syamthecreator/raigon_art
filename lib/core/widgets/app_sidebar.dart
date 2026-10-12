@@ -14,7 +14,7 @@ class AppSidebar extends StatelessWidget {
     required this.onLogout,
   });
 
-  static const double expandedWidth = 270;
+  static const double expandedWidth = 300;
   static const double collapsedWidth = 76;
 
   final bool collapsed;

@@ -79,7 +79,6 @@ class _PhotoCollectionScreenState extends State<PhotoCollectionScreen> {
     _photoLog('RESTORE: checking saved folder');
 
     setState(() {
-      _loading = true;
       _error = null;
       _selected.clear();
     });

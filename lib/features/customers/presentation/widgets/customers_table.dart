@@ -258,15 +258,7 @@ class _CustomersTableState extends State<CustomersTable> {
             ),
 
             Text(c.phone, style: cell),
-            Padding(
-              padding: const EdgeInsets.only(right: 16),
-              child: Text(
-                c.address,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: cell,
-              ),
-            ),
+
             PhotoStrip(
               count: c.photoCount,
               urls: c.photoUrls,

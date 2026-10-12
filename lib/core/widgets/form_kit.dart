@@ -384,13 +384,15 @@ class FormDropdown<T> extends StatefulWidget {
     required this.items,
     required this.labelOf,
     required this.onChanged,
+    this.hint,
     this.maxMenuHeight = 300,
   });
 
-  final T value;
+  final T? value;
   final List<T> items;
   final String Function(T item) labelOf;
   final ValueChanged<T> onChanged;
+  final String? hint;
   final double maxMenuHeight;
 
   @override
@@ -483,7 +485,9 @@ class _FormDropdownState<T> extends State<FormDropdown<T>> {
               children: [
                 Expanded(
                   child: Text(
-                    widget.labelOf(widget.value),
+                    widget.value == null
+                        ? (widget.hint ?? 'Select an option')
+                        : widget.labelOf(widget.value as T),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(

@@ -109,12 +109,9 @@ class FrameSpecFields extends StatelessWidget {
       }
     }
 
-    final sizeNames = availableSizes.map((size) => size.name).toList();
+    final sizeNames = availableSizes.map((frame) => frame.name).toList();
 
-    final selectedSize = sizeNames.contains(data.size)
-        ? data.size
-        : (sizeNames.isNotEmpty ? sizeNames.first : null);
-
+    final selectedSize = sizeNames.contains(data.size) ? data.size : null;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -128,11 +125,24 @@ class FrameSpecFields extends StatelessWidget {
                       child: Text('No frame sizes available'),
                     )
                   : FormDropdown<String>(
-                      value: selectedSize!,
+                      key: ValueKey(selectedSize),
+                      value: selectedSize,
+                      hint: 'Select Frame Size',
                       items: sizeNames,
-                      labelOf: (size) => size,
+                      labelOf: (name) => name,
                       onChanged: (value) {
                         data.size = value;
+
+                        final selectedFrame = availableSizes.firstWhere(
+                          (frame) => frame.name == value,
+                        );
+
+                        data.width.text = selectedFrame.width.toString();
+                        data.height.text = selectedFrame.height.toString();
+                        data.unit = kUnits.contains(selectedFrame.unit)
+                            ? selectedFrame.unit
+                            : 'Inch';
+
                         onChanged();
                       },
                     ),

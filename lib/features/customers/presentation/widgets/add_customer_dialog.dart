@@ -1,5 +1,5 @@
 import 'dart:math' as math;
-import 'dart:ui' show ImageFilter;
+import 'dart:ui';
 
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:file_picker/file_picker.dart';
@@ -16,16 +16,15 @@ import 'package:raigon_art/core/widgets/customer_dialog_kit.dart';
 import 'package:raigon_art/core/widgets/form_kit.dart';
 import 'package:raigon_art/features/customers/presentation/widgets/frame_spec_fields.dart';
 import 'package:raigon_art/core/models/status.dart';
-import 'package:raigon_art/features/customers/providers/customer_provider.dart';
-import 'package:raigon_art/features/frame_sizes/data/frame_size_store.dart';
+import 'package:raigon_art/core/provider/customer_and_order_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:raigon_art/features/frame_sizes/providers/frame_size_provider.dart';
 
 Future<void> showAddCustomerDialog(BuildContext context) async {
-  await FrameSizeStore.initialize();
+  await context.read<FrameSizeProvider>().init();
 
   if (!context.mounted) return;
 
-  // Keep your existing showGeneralDialog code here.
   final result = await showGeneralDialog<Customer>(
     context: context,
     barrierDismissible: false,
@@ -49,7 +48,7 @@ Future<void> showAddCustomerDialog(BuildContext context) async {
   if (result == null || !context.mounted) return;
 
   try {
-    await context.read<CustomerProvider>().add(result);
+    await context.read<CustomerAndOrderProvider>().add(result);
 
     if (context.mounted) {
       AppSnackBar.success(
@@ -77,7 +76,7 @@ Future<void> showEditCustomerDialog(
   if (result == null || !context.mounted) return;
 
   try {
-    await context.read<CustomerProvider>().update(result);
+    await context.read<CustomerAndOrderProvider>().update(result);
 
     if (context.mounted) {
       AppSnackBar.success(context, 'Customer updated successfully.');
@@ -400,7 +399,9 @@ class _AddCustomerDialogState extends State<AddCustomerDialog> {
         : frames.fold<int>(0, (a, f) => a + f.qty);
 
     final customer = Customer(
-      id: widget.existing?.id ?? context.read<CustomerProvider>().nextId(),
+      id:
+          widget.existing?.id ??
+          context.read<CustomerAndOrderProvider>().nextId(),
       name: name,
       city: _city.text.trim(),
       phone: phone,

@@ -3,14 +3,13 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:raigon_art/features/customers/models/customer_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-/// Local storage contract. This can be replaced with Firebase later.
+
 abstract class CustomerRepository {
   Future<List<Customer>> getAll();
   Future<void> upsert(Customer customer);
   Future<void> delete(String id);
 }
 
-/// SharedPreferences implementation.
 class LocalCustomerRepository implements CustomerRepository {
   static const String _key = 'raigon_customers_v1';
 
@@ -51,8 +50,6 @@ class LocalCustomerRepository implements CustomerRepository {
   Future<void> _enqueue(Future<void> Function() job) {
     final next = _queue.then((_) => job());
 
-    // Keep the queue usable after a failed write, but return the
-    // error to the caller so the UI can handle it.
     _queue = next.then<void>(
       (_) {},
       onError: (Object error, StackTrace stackTrace) {

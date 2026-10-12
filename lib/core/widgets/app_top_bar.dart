@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:raigon_art/core/theme/app_colors.dart';
-import 'package:raigon_art/core/theme/app_palette.dart' show AppPalette;
+import 'package:raigon_art/core/theme/app_palette.dart';
 import 'package:raigon_art/core/theme/theme_controller.dart';
 import 'package:raigon_art/core/widgets/shell_scope.dart';
 

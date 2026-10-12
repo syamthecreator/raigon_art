@@ -11,7 +11,7 @@ import 'package:raigon_art/features/customers/models/customer_model.dart';
 import 'package:raigon_art/features/customers/presentation/widgets/add_customer_dialog.dart';
 import 'package:raigon_art/features/customers/presentation/widgets/customer_view_dialog.dart';
 import 'package:raigon_art/core/widgets/shell_scope.dart';
-import 'package:raigon_art/features/customers/providers/customer_provider.dart';
+import 'package:raigon_art/core/provider/customer_and_order_provider.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -19,10 +19,11 @@ class DashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = AppPalette.of(context);
-    final customerProvider = context.watch<CustomerProvider>();
-    final customers = customerProvider.customers;
+    final customerAndOrderProvider = context.watch<CustomerAndOrderProvider>();
+    final customers = customerAndOrderProvider.customers;
 
-    if (customerProvider.isLoading && !customerProvider.initialized) {
+    if (customerAndOrderProvider.isLoading &&
+        !customerAndOrderProvider.initialized) {
       return const Center(child: CircularProgressIndicator());
     }
 
@@ -33,7 +34,6 @@ class DashboardScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Dashboard header stays at the top.
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -68,7 +68,6 @@ class DashboardScreen extends StatelessWidget {
 
               const SizedBox(height: 24),
 
-              // Statistics remain above the main card.
               _buildStatsGrid(
                 context,
                 width: constraints.maxWidth - 48,

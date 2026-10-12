@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:raigon_art/core/utils/helper.dart';
 import 'package:raigon_art/features/customers/models/frame_spec.dart';
 import 'package:raigon_art/core/models/status.dart';
 
@@ -54,7 +55,7 @@ class Customer {
   final List<String> photoSizeLabels;
 
   int get balance => total - advance;
-  String get orderDateLabel => formatDate(orderDate);
+  String get orderDateLabel => Helper.formatDate(orderDate);
 
   List<FrameSpec> get effectiveFrames => frames.isNotEmpty
       ? frames
@@ -162,20 +163,3 @@ class Customer {
     photoSizeLabels: photoSizeLabels,
   );
 }
-
-const _months = [
-  'Jan',
-  'Feb',
-  'Mar',
-  'Apr',
-  'May',
-  'Jun',
-  'Jul',
-  'Aug',
-  'Sep',
-  'Oct',
-  'Nov',
-  'Dec',
-];
-
-String formatDate(DateTime d) => '${_months[d.month - 1]} ${d.day}, ${d.year}';

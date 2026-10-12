@@ -1,5 +1,5 @@
-import 'dart:ui' show ImageFilter;
 
+import 'dart:ui';
 import 'package:flutter/material.dart';
 
 Future<T?> showCustomerDialog<T>(

@@ -3,11 +3,14 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+
 import 'package:raigon_art/core/theme/app_colors.dart';
 import 'package:raigon_art/core/theme/app_palette.dart';
 import 'package:raigon_art/core/widgets/app_dropdown.dart';
 import 'package:raigon_art/core/widgets/app_snackbar.dart';
-import 'package:raigon_art/features/frame_sizes/data/frame_size_store.dart';
+import 'package:raigon_art/features/frame_sizes/models/frame_size_model.dart';
+import 'package:raigon_art/features/frame_sizes/providers/frame_size_provider.dart';
 
 const _units = ['Inch', 'CM'];
 const _categories = [
@@ -32,21 +35,12 @@ class _FrameSizesScreenState extends State<FrameSizesScreen> {
   void initState() {
     super.initState();
 
-    FrameSizeStore.sizes.addListener(_onSizesChanged);
-    FrameSizeStore.initialize();
-  }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
 
-  void _onSizesChanged() {
-    if (mounted) setState(() {});
+      context.read<FrameSizeProvider>().init();
+    });
   }
-
-  @override
-  void dispose() {
-    FrameSizeStore.sizes.removeListener(_onSizesChanged);
-    super.dispose();
-  }
-
-  String _query = '';
 
   static const _flex = [13, 15, 10, 11, 19, 19, 17, 19, 10];
   static const _heads = [
@@ -61,26 +55,7 @@ class _FrameSizesScreenState extends State<FrameSizesScreen> {
     'ACTIONS',
   ];
 
-  List<FrameSize> get _filtered {
-    final q = _query.trim().toLowerCase();
-
-    final list = FrameSizeStore.sizes.value
-        .where(
-          (s) =>
-              s.name.toLowerCase().contains(q) ||
-              s.category.toLowerCase().contains(q) ||
-              s.code.toLowerCase().contains(q),
-        )
-        .toList();
-
-    return list;
-  }
-
   Future<void> _add() async {
-    await FrameSizeStore.initialize();
-
-    if (!mounted) return;
-
     final result = await _showBlurDialog<FrameSize>(
       context,
       (_) => const _FrameSizeDialog(),
@@ -88,9 +63,11 @@ class _FrameSizesScreenState extends State<FrameSizesScreen> {
 
     if (result == null || !mounted) return;
 
-    await FrameSizeStore.add(
+    final provider = context.read<FrameSizeProvider>();
+
+    await provider.add(
       FrameSize(
-        code: FrameSizeStore.nextCode(),
+        code: provider.nextCode(),
         name: result.name,
         width: result.width,
         height: result.height,
@@ -112,7 +89,7 @@ class _FrameSizesScreenState extends State<FrameSizesScreen> {
 
     if (result == null || !mounted) return;
 
-    await FrameSizeStore.update(
+    await context.read<FrameSizeProvider>().update(
       FrameSize(
         code: size.code,
         name: result.name,
@@ -138,117 +115,113 @@ class _FrameSizesScreenState extends State<FrameSizesScreen> {
 
     if (confirmed != true || !mounted) return;
 
-    await FrameSizeStore.remove(size.code);
+    await context.read<FrameSizeProvider>().remove(size.code);
 
     if (!mounted) return;
 
     AppSnackBar.success(context, 'Frame size deleted successfully.');
   }
 
+  @override
+  Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
+    final provider = context.watch<FrameSizeProvider>();
+    final list = provider.filteredSizes;
 
-@override
-Widget build(BuildContext context) {
-  final p = AppPalette.of(context);
-  final list = _filtered;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _titleRow(p),
+          const SizedBox(height: 24),
 
-  return Padding(
-    padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _titleRow(p),
-        const SizedBox(height: 24),
-
-        Expanded(
-          child: Container(
-            width: double.infinity,
-            decoration: p.card(radius: 16),
-            clipBehavior: Clip.antiAlias,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Search and total sizes.
-                Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Row(
-                    children: [
-                      SizedBox(
-                        width: 340,
-                        height: 44,
-                        child: TextField(
-                          onChanged: (v) {
-                            setState(() => _query = v);
-                          },
-                          cursorColor: p.textPrimary,
-                          style: TextStyle(
-                            fontSize: 14.5,
-                            color: p.textPrimary,
+          Expanded(
+            child: Container(
+              width: double.infinity,
+              decoration: p.card(radius: 16),
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 340,
+                          height: 44,
+                          child: TextField(
+                            onChanged: context
+                                .read<FrameSizeProvider>()
+                                .setQuery,
+                            cursorColor: p.textPrimary,
+                            style: TextStyle(
+                              fontSize: 14.5,
+                              color: p.textPrimary,
+                            ),
+                            decoration: InputDecoration(
+                              isDense: true,
+                              hintText: 'Search size name, category...',
+                              hintStyle: TextStyle(
+                                fontSize: 14.5,
+                                color: p.textMuted,
+                              ),
+                              prefixIcon: Icon(
+                                Icons.search,
+                                size: 22,
+                                color: p.textMuted,
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                vertical: 12,
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(color: p.border),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: const BorderSide(
+                                  color: AppColors.gold,
+                                ),
+                              ),
+                            ),
                           ),
-                          decoration: InputDecoration(
-                            isDense: true,
-                            hintText: 'Search size name, category...',
-                            hintStyle: TextStyle(
+                        ),
+                        const Spacer(),
+                        Text.rich(
+                          TextSpan(
+                            text: 'Total Sizes: ',
+                            style: TextStyle(
                               fontSize: 14.5,
                               color: p.textMuted,
                             ),
-                            prefixIcon: Icon(
-                              Icons.search,
-                              size: 22,
-                              color: p.textMuted,
-                            ),
-                            contentPadding:
-                                const EdgeInsets.symmetric(vertical: 12),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(color: p.border),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(
-                                color: AppColors.gold,
+                            children: [
+                              TextSpan(
+                                text: '${provider.sizes.length}',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  color: p.textPrimary,
+                                ),
                               ),
-                            ),
+                            ],
                           ),
                         ),
-                      ),
-                      const Spacer(),
-                      Text.rich(
-                        TextSpan(
-                          text: 'Total Sizes: ',
-                          style: TextStyle(
-                            fontSize: 14.5,
-                            color: p.textMuted,
-                          ),
-                          children: [
-                            TextSpan(
-                              text: '${FrameSizeStore.sizes.value.length}',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w700,
-                                color: p.textPrimary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
 
-                // Table uses the remaining height.
-                Expanded(
-                  child: SingleChildScrollView(
-                    child: _table(p, list),
+                  Expanded(
+                    child: SingleChildScrollView(child: _table(p, list)),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-        ),
-      ],
-    ),
-  );
-}
-
+        ],
+      ),
+    );
+  }
 
   Widget _titleRow(AppPalette p) {
     return Row(
@@ -345,7 +318,6 @@ Widget build(BuildContext context) {
     );
   }
 }
-
 
 class _SizeRow extends StatefulWidget {
   const _SizeRow({
@@ -491,7 +463,6 @@ class _SizeRowState extends State<_SizeRow> {
   }
 }
 
-// ───────────────────────── Shared bits ─────────────────────────
 
 class _GradientButton extends StatelessWidget {
   const _GradientButton({
@@ -601,7 +572,6 @@ Future<T?> _showBlurDialog<T>(BuildContext context, WidgetBuilder builder) {
   );
 }
 
-/// Dialog frame: header (+ divider), body, tinted footer.
 class _DialogShell extends StatelessWidget {
   const _DialogShell({
     required this.maxWidth,
@@ -735,8 +705,6 @@ Widget _cancelButton(BuildContext context, AppPalette p) {
     ),
   );
 }
-
-// ───────────────────────── Add / Edit dialog ─────────────────────────
 
 class _FrameSizeDialog extends StatefulWidget {
   const _FrameSizeDialog({this.initial});
@@ -906,8 +874,6 @@ class _FrameSizeDialogState extends State<_FrameSizeDialog> {
     );
   }
 
-  /// AppDropdown has a 3px glow padding around the field; widen by 6px so the
-  /// visible field lines up with the text inputs.
   Widget _dropdown<T>({
     required T value,
     required List<T> items,
@@ -1036,8 +1002,6 @@ class _FrameSizeDialogState extends State<_FrameSizeDialog> {
     );
   }
 }
-
-// ───────────────────────── Delete dialog ─────────────────────────
 
 class _DeleteDialog extends StatelessWidget {
   const _DeleteDialog({required this.size});

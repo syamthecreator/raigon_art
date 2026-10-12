@@ -22,7 +22,6 @@ class AuthModel {
   final bool isAuthenticated;
   final String? errorMessage;
   final String? successMessage;
-
   bool get canResend => secondsLeft == 0;
 
   String get timeText {

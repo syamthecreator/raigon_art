@@ -27,11 +27,8 @@ class AppPaginationFooter extends StatelessWidget {
     final safePageSize = pageSize > 0 ? pageSize : defaultPageSize;
     final totalPages = math.max(1, (totalItems / safePageSize).ceil());
     final currentPage = page.clamp(1, totalPages);
-
     final start = totalItems == 0 ? 0 : (currentPage - 1) * safePageSize + 1;
-
     final end = math.min(currentPage * safePageSize, totalItems);
-
     final bold = TextStyle(fontWeight: FontWeight.w700, color: p.textPrimary);
 
     Widget pageButton({
@@ -136,7 +133,6 @@ class AppPaginationFooter extends StatelessWidget {
             ),
           );
 
-          // Use a vertical layout when horizontal space is limited.
           if (constraints.maxWidth < 650) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,

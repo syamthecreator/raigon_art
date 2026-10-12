@@ -1,13 +1,14 @@
 import 'dart:async';
 import 'dart:math' as math;
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:raigon_art/core/models/status.dart';
+import 'package:raigon_art/core/theme/app_palette.dart';
 import 'package:raigon_art/features/customers/models/customer_model.dart';
 import 'package:raigon_art/features/customers/repository/customer_repository.dart';
 
-/// Customer state and all customer data operations.
-class CustomerProvider extends ChangeNotifier {
-  CustomerProvider({CustomerRepository? repository})
+class CustomerAndOrderProvider extends ChangeNotifier {
+  CustomerAndOrderProvider({CustomerRepository? repository})
     : _repository = repository ?? LocalCustomerRepository();
 
   final CustomerRepository _repository;
@@ -76,7 +77,6 @@ class CustomerProvider extends ChangeNotifier {
       throw StateError('Customer ID already exists: ${customer.id}');
     }
 
-    // Optimistic UI update.
     _customers = [customer, ..._customers];
     _error = null;
     notifyListeners();
@@ -103,6 +103,7 @@ class CustomerProvider extends ChangeNotifier {
       for (final existing in _customers)
         existing.id == customer.id ? customer : existing,
     ];
+
     _error = null;
     notifyListeners();
 
@@ -133,7 +134,185 @@ class CustomerProvider extends ChangeNotifier {
     }
   }
 
-  // CSV export logic moved here from customer_csv.dart.
+  Status? _orderFilter;
+
+  String _orderQuery = '';
+
+  int _orderPage = 1;
+
+  static const int orderPageSize = 10;
+
+  final Map<String, Status> _statusOverride = {};
+
+  Status? get orderFilter => _orderFilter;
+
+  String get orderQuery => _orderQuery;
+
+  int get orderPage => _orderPage;
+
+  Status statusOf(Customer customer) {
+    return _statusOverride[customer.id] ?? customer.status;
+  }
+
+  void setOrderStatus(Customer customer, Status status) {
+    _statusOverride[customer.id] = status;
+    notifyListeners();
+  }
+
+  void setOrderFilter(Status? status) {
+    _orderFilter = status;
+    _orderPage = 1;
+    notifyListeners();
+  }
+
+  void setOrderQuery(String query) {
+    _orderQuery = query;
+    _orderPage = 1;
+    notifyListeners();
+  }
+
+  int orderCount(Status? status) {
+    if (status == null) {
+      return _customers.length;
+    }
+
+    return _customers.where((customer) {
+      return statusOf(customer) == status;
+    }).length;
+  }
+
+  List<Customer> get filteredOrders {
+    final query = _orderQuery.trim().toLowerCase();
+
+    return _customers.where((customer) {
+      if (_orderFilter != null && statusOf(customer) != _orderFilter) {
+        return false;
+      }
+
+      if (query.isEmpty) {
+        return true;
+      }
+
+      return customer.id.toLowerCase().contains(query) ||
+          customer.name.toLowerCase().contains(query);
+    }).toList();
+  }
+
+  int get orderTotalPages {
+    return math.max(1, (filteredOrders.length / orderPageSize).ceil());
+  }
+
+  int get currentOrderPage {
+    return _orderPage.clamp(1, orderTotalPages);
+  }
+
+  List<Customer> get paginatedOrders {
+    final currentPage = currentOrderPage;
+
+    return filteredOrders
+        .skip((currentPage - 1) * orderPageSize)
+        .take(orderPageSize)
+        .toList();
+  }
+
+  void setOrderPage(int page) {
+    _orderPage = page;
+    notifyListeners();
+  }
+
+  Color statusColor(Status status) {
+    return switch (status) {
+      Status.inProgress => AppPalette.statusGold,
+      Status.pending => AppPalette.orange,
+      Status.completed => AppPalette.statusGreen,
+      Status.cancelled => AppPalette.statusRed,
+    };
+  }
+
+  String statusLabel(Status status) {
+    return switch (status) {
+      Status.inProgress => 'In Progress',
+      Status.pending => 'Pending',
+      Status.completed => 'Completed',
+      Status.cancelled => 'Cancelled',
+    };
+  }
+
+  String paymentOf(Customer customer) {
+    if (customer.advance <= 0) {
+      return 'Unpaid';
+    }
+
+    if (customer.advance >= customer.total) {
+      return 'Paid';
+    }
+
+    return 'Partial';
+  }
+
+  Color paymentColor(String status) {
+    return switch (status) {
+      'Paid' => AppPalette.statusGreen,
+      'Partial' => AppPalette.statusGold,
+      _ => AppPalette.statusRed,
+    };
+  }
+
+  static const List<String> months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+
+  String formatOrderDate(DateTime? date) {
+    if (date == null) {
+      return 'N/A';
+    }
+
+    return '${months[date.month - 1]} '
+        '${date.day.toString().padLeft(2, '0')}, '
+        '${date.year}';
+  }
+
+  String deliveryLabel(Customer customer) {
+    return statusOf(customer) == Status.cancelled
+        ? 'N/A'
+        : formatOrderDate(customer.expectedDelivery);
+  }
+
+  String money(int value) {
+    final s = value.toString();
+
+    if (s.length <= 3) {
+      return '₹$s';
+    }
+
+    final last3 = s.substring(s.length - 3);
+    var rest = s.substring(0, s.length - 3);
+
+    final parts = <String>[];
+
+    while (rest.length > 2) {
+      parts.insert(0, rest.substring(rest.length - 2));
+      rest = rest.substring(0, rest.length - 2);
+    }
+
+    if (rest.isNotEmpty) {
+      parts.insert(0, rest);
+    }
+
+    return '₹${parts.join(',')},$last3';
+  }
+
   static const List<String> csvHeader = [
     'Customer ID',
     'Name',
@@ -163,7 +342,6 @@ class CustomerProvider extends ChangeNotifier {
   static String _csvDate(DateTime date) {
     String two(int value) => value.toString().padLeft(2, '0');
 
-    // Retains the existing Excel date-text behavior.
     return '\u200B${two(date.day)}-${two(date.month)}-${date.year}';
   }
 

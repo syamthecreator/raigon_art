@@ -5,7 +5,6 @@ class AppSnackBar {
   AppSnackBar._();
 
   static const double _width = 340;
-
   static void success(BuildContext context, String message) =>
       _show(context, message, isError: false);
   static void error(BuildContext context, String message) =>

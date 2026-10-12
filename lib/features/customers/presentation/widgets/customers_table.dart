@@ -91,10 +91,7 @@ class _CustomersTableState extends State<CustomersTable> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Fixed table header.
                       _headerRow(p),
-
-                      // Table body takes the remaining height.
                       Expanded(
                         child: widget.customers.isEmpty
                             ? Center(

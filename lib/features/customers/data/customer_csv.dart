@@ -31,28 +31,11 @@ String _csvDate(DateTime date) {
 }
 
 String buildCustomersCsv(List<Customer> customers) {
-  debugPrint('CSV EXPORT START');
-  debugPrint('Customer count: ${customers.length}');
+  debugPrint('CSV EXPORT START | Customers: ${customers.length}');
 
   final rows = <String>[_header.map(_esc).join(',')];
 
-  debugPrint('CSV header created');
-
   for (final customer in customers) {
-    debugPrint(
-      'Processing customer: '
-      '${customer.id} | '
-      '${customer.name} | '
-      '${customer.phone}',
-    );
-
-    debugPrint(
-      'Status: ${customer.status.label} | '
-      'Total: ${customer.total} | '
-      'Advance: ${customer.advance} | '
-      'Balance: ${customer.balance}',
-    );
-
     rows.add(
       [
         _esc(customer.id),
@@ -73,11 +56,11 @@ String buildCustomersCsv(List<Customer> customers) {
 
   final csv = rows.join('\r\n');
 
-  debugPrint('CSV rows created: ${rows.length}');
-  debugPrint('CSV length: ${csv.length} characters');
-  debugPrint('CSV preview:');
-  debugPrint(csv.length > 500 ? '${csv.substring(0, 500)}...' : csv);
-  debugPrint('CSV EXPORT END');
+  debugPrint(
+    'CSV EXPORT COMPLETE | '
+    'Rows: ${rows.length - 1} | '
+    'Length: ${csv.length} characters',
+  );
 
   return csv;
 }
@@ -93,7 +76,7 @@ String csvFileName([DateTime? now]) {
       '${two(date.month)}-'
       '${two(date.day)}.csv';
 
-  debugPrint('CSV file name: $fileName');
+  debugPrint('CSV FILE NAME: $fileName');
 
   return fileName;
 }

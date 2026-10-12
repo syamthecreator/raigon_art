@@ -61,6 +61,4 @@ class AppColors {
     end: Alignment.bottomRight,
     colors: [green, greenDark],
   );
-
-  
 }

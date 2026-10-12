@@ -16,7 +16,7 @@ import 'package:raigon_art/features/customers/models/customer_model.dart';
 import 'package:raigon_art/features/customers/presentation/widgets/customers_table.dart';
 import 'package:raigon_art/core/models/status.dart';
 import 'package:raigon_art/core/widgets/shell_scope.dart';
-import 'package:raigon_art/features/customers/providers/customer_provider.dart';
+import 'package:raigon_art/core/provider/customer_and_order_provider.dart';
 
 enum SortOption {
   newest('Newest First'),
@@ -48,7 +48,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
     if (!ok || !mounted) return;
 
     try {
-      await context.read<CustomerProvider>().remove(customer.id);
+      await context.read<CustomerAndOrderProvider>().remove(customer.id);
 
       if (mounted) {
         AppSnackBar.success(context, 'Customer deleted successfully.');
@@ -68,7 +68,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
 
   List<Customer> get _filtered {
     final q = _searchCtrl.text.trim().toLowerCase();
-    final provider = context.read<CustomerProvider>();
+    final provider = context.read<CustomerAndOrderProvider>();
 
     final list = provider.customers.where((c) {
       final statusOk = _status == null || c.status == _status;
@@ -109,7 +109,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
       return;
     }
     try {
-      final provider = context.read<CustomerProvider>();
+      final provider = context.read<CustomerAndOrderProvider>();
       await downloadCsv(
         provider.csvFileName(),
         provider.buildCustomersCsv(list),
@@ -124,7 +124,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
 
   @override
   Widget build(BuildContext context) {
-    context.watch<CustomerProvider>();
+    context.watch<CustomerAndOrderProvider>();
     final pagination = context.watch<PaginationProvider>();
     final p = AppPalette.of(context);
 
@@ -140,12 +140,10 @@ class _CustomersScreenState extends State<CustomersScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Page header stays at the top.
               _header(p, wide),
 
               const SizedBox(height: 24),
 
-              // Card fills the remaining screen height.
               Expanded(
                 child: Container(
                   width: double.infinity,
@@ -160,7 +158,6 @@ class _CustomersScreenState extends State<CustomersScreen> {
                         child: _toolbar(p, wide),
                       ),
 
-                      // Table occupies the available card space.
                       CustomersTable(
                         customers: pageItems,
                         onView: (c) => showViewCustomerDialog(context, c),

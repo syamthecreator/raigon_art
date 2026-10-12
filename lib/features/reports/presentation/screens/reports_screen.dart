@@ -5,14 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:pdf/pdf.dart' as pdf;
 import 'package:pdf/widgets.dart' as pw;
+import 'package:provider/provider.dart';
+import 'package:raigon_art/core/provider/customer_and_order_provider.dart';
 import 'package:raigon_art/core/theme/app_colors.dart';
 import 'package:raigon_art/core/theme/app_palette.dart';
 import 'package:raigon_art/core/widgets/app_dropdown.dart';
 import 'package:raigon_art/core/widgets/app_snackbar.dart';
 import 'package:raigon_art/features/customers/models/customer_model.dart';
-import 'package:raigon_art/features/customers/data/customer_store.dart';
 import 'package:raigon_art/core/models/status.dart';
-
 
 enum ReportPeriod { month1, month2, allTime }
 
@@ -102,7 +102,6 @@ const Map<ReportPeriod, _PeriodData> _periods = {
   ),
 };
 
-// Display order / fallbacks that match the approved design.
 const _activeOrder = ['RA-1003', 'RA-1004', 'RA-1001', 'RA-1005', 'RA-1002'];
 const _archivedOrder = ['RA-1002', 'RA-1004', 'RA-0995', 'RA-0988'];
 final DateTime _activeSince = DateTime(2026, 8, 1);
@@ -120,8 +119,6 @@ const Map<String, String> _materialFallback = {
   'RA-0995': 'Teak Wood Moulding',
   'RA-0988': 'Matte Black Aluminum',
 };
-
-// ───────────────────────── Helpers ─────────────────────────
 
 String _inr(int v) {
   final s = v.abs().toString();
@@ -170,7 +167,7 @@ String _initials(String name) {
 
 int _orderIndex(List<String> order, String id) {
   final i = order.indexOf(id);
-  return i == -1 ? -1 : i; // unknown ids (new customers) sort first
+  return i == -1 ? -1 : i;
 }
 
 List<Customer> _activeOf(List<Customer> all) {
@@ -203,8 +200,6 @@ String _materialOf(Customer c) =>
     (c.effectiveFrames.isNotEmpty
         ? c.effectiveFrames.first.material
         : c.frameType);
-
-// ───────────────────────── Screen ─────────────────────────
 
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
@@ -310,36 +305,33 @@ class _ReportsScreenState extends State<ReportsScreen> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final p = AppPalette.of(context);
-    return ValueListenableBuilder<List<Customer>>(
-      valueListenable: CustomerStore.customers,
-      builder: (context, all, _) {
-        final active = _activeOf(all);
-        final archived = _archivedOf(all);
-        return SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24, 28, 24, 32),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _titleRow(p, active, archived),
-              const SizedBox(height: 24),
-              _filterBar(p),
-              const SizedBox(height: 24),
-              _metricRow(p),
-              const SizedBox(height: 26),
-              _chartRow(p),
-              const SizedBox(height: 26),
-              _customerCard(p, active, archived),
-            ],
-          ),
-        );
-      },
-    );
-  }
+ @override
+Widget build(BuildContext context) {
+  final p = AppPalette.of(context);
+  final customerProvider = context.watch<CustomerAndOrderProvider>();
+  final all = customerProvider.customers;
 
-  // ───────────── title row ─────────────
+  final active = _activeOf(all);
+  final archived = _archivedOf(all);
+
+  return SingleChildScrollView(
+    padding: const EdgeInsets.fromLTRB(24, 28, 24, 32),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _titleRow(p, active, archived),
+        const SizedBox(height: 24),
+        _filterBar(p),
+        const SizedBox(height: 24),
+        _metricRow(p),
+        const SizedBox(height: 26),
+        _chartRow(p),
+        const SizedBox(height: 26),
+        _customerCard(p, active, archived),
+      ],
+    ),
+  );
+}
 
   Widget _titleRow(AppPalette p, List<Customer> active, List<Customer> arch) {
     final titleBlock = Column(
@@ -399,8 +391,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
       },
     );
   }
-
-  // ───────────── filter mode bar ─────────────
 
   Widget _filterBar(AppPalette p) {
     final pill = Container(
@@ -462,8 +452,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
       ),
     );
   }
-
-  // ───────────── metric cards ─────────────
 
   Widget _metricRow(AppPalette p) {
     final d = _d;
@@ -575,8 +563,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
       ),
     );
   }
-
-  // ───────────── chart + top frame sizes ─────────────
 
   Widget _chartRow(AppPalette p) {
     return LayoutBuilder(
@@ -837,8 +823,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
-  // ───────────── customer revenue card ─────────────
-
   Widget _customerCard(
     AppPalette p,
     List<Customer> active,
@@ -1014,8 +998,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
-  // ───────────── tables ─────────────
-
   Widget _tableShell(
     AppPalette p,
     List<String> heads,
@@ -1185,9 +1167,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     color: Colors.white,
                   ),
                   label: 'Remind',
-                  onTap: () {
-                  // open WhatsApp reminder for c.phone
-                  },
+                  onTap: () {},
                   fontSize: 14.5,
                   vPad: 10,
                   radius: 8,
@@ -1330,9 +1310,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
           ),
           InkWell(
             borderRadius: BorderRadius.circular(8),
-            onTap: () {
-              // open the archived order record for c.id
-            },
+            onTap: () {},
             child: Container(
               height: 40,
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -1377,8 +1355,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
   }
 }
-
-// ───────────────────────── Metric card ─────────────────────────
 
 class _MetricCard extends StatefulWidget {
   const _MetricCard({
@@ -1467,8 +1443,6 @@ class _MetricCardState extends State<_MetricCard> {
   }
 }
 
-// ───────────────────────── Chart painter ─────────────────────────
-
 class _TrajectoryPainter extends CustomPainter {
   _TrajectoryPainter({
     required this.values,
@@ -1506,7 +1480,6 @@ class _TrajectoryPainter extends CustomPainter {
         ),
     ];
 
-    // Dashed grid lines.
     final grid = Paint()
       ..color = dark
           ? Colors.white.withValues(alpha: 0.85)
@@ -1525,7 +1498,6 @@ class _TrajectoryPainter extends CustomPainter {
       }
     }
 
-    // Area fill.
     final area = Path()..moveTo(pts.first.dx, baseY);
     for (final o in pts) {
       area.lineTo(o.dx, o.dy);
@@ -1546,7 +1518,6 @@ class _TrajectoryPainter extends CustomPainter {
         ).createShader(Rect.fromLTRB(0, top, size.width, baseY)),
     );
 
-    // Baseline.
     canvas.drawLine(
       Offset(padX, baseY),
       Offset(size.width - padX, baseY),
@@ -1557,7 +1528,6 @@ class _TrajectoryPainter extends CustomPainter {
         ..strokeWidth = dark ? 2 : 1.5,
     );
 
-    // Line.
     final line = Path()..moveTo(pts.first.dx, pts.first.dy);
     for (var i = 1; i < pts.length; i++) {
       line.lineTo(pts[i].dx, pts[i].dy);
@@ -1572,7 +1542,6 @@ class _TrajectoryPainter extends CustomPainter {
         ..strokeCap = StrokeCap.round,
     );
 
-    // Dots.
     for (var i = 0; i < pts.length; i++) {
       final last = i == pts.length - 1;
       if (last) {
@@ -1598,7 +1567,6 @@ class _TrajectoryPainter extends CustomPainter {
       }
     }
 
-    // Labels.
     for (var i = 0; i < labels.length; i++) {
       final last = i == labels.length - 1;
       final tp = TextPainter(
@@ -1624,8 +1592,6 @@ class _TrajectoryPainter extends CustomPainter {
       old.values != values ||
       old.labels != labels;
 }
-
-// ───────────────────────── Gradient button ─────────────────────────
 
 class _GradientButton extends StatelessWidget {
   const _GradientButton({
@@ -1691,8 +1657,6 @@ class _GradientButton extends StatelessWidget {
     );
   }
 }
-
-// ───────────────────────── PDF helpers ─────────────────────────
 
 pw.Widget _pdfCell(String t, {bool bold = false}) => pw.Padding(
   padding: const pw.EdgeInsets.all(5),

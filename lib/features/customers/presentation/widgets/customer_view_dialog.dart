@@ -12,8 +12,6 @@ import 'package:raigon_art/core/widgets/form_kit.dart';
 
 enum _ViewAction { edit }
 
-/// Opens the read-only "Customer Order Profile & Summary" dialog.
-/// "Edit Customer & Order" closes it and opens the existing edit dialog.
 Future<void> showViewCustomerDialog(
   BuildContext context,
   Customer customer,
@@ -28,7 +26,6 @@ Future<void> showViewCustomerDialog(
   }
 }
 
-// ───────────────────────── Photo vault data ─────────────────────────
 
 class _VaultPhoto {
   const _VaultPhoto({
@@ -56,7 +53,6 @@ List<_VaultPhoto> _photosOf(Customer c) {
   ];
 }
 
-// ───────────────────────── Helpers ─────────────────────────
 
 String _inr(int v) {
   final s = v.abs().toString();
@@ -91,7 +87,6 @@ String _paymentLabel(Customer c) {
   return 'Partial';
 }
 
-// ───────────────────────── Dialog ─────────────────────────
 
 class ViewCustomerDialog extends StatefulWidget {
   const ViewCustomerDialog({super.key, required this.customer});
@@ -141,7 +136,6 @@ class _ViewCustomerDialogState extends State<ViewCustomerDialog> {
     );
   }
 
-  // ───────────── header ─────────────
 
   Widget _header(AppPalette p) {
     return Padding(
@@ -198,7 +192,6 @@ class _ViewCustomerDialogState extends State<ViewCustomerDialog> {
     );
   }
 
-  // ───────────── body ─────────────
 
   Widget _body(FormColors c) {
     final p = c.p;
@@ -254,7 +247,6 @@ class _ViewCustomerDialogState extends State<ViewCustomerDialog> {
     );
   }
 
-  // ───────────── profile card ─────────────
 
   Color _highlightBg(AppPalette p) =>
       p.isDark ? const Color(0xFF383A66) : const Color(0xFFFBF8F1);
@@ -393,7 +385,6 @@ class _ViewCustomerDialogState extends State<ViewCustomerDialog> {
     );
   }
 
-  // ───────────── contact + summary cards ─────────────
 
   Widget _card(FormColors c, {required Widget child, EdgeInsets? padding}) {
     final p = c.p;
@@ -613,7 +604,6 @@ class _ViewCustomerDialogState extends State<ViewCustomerDialog> {
     );
   }
 
-  // ───────────── frame specifications ─────────────
 
   Widget _specCard(FormColors c, List<FrameSpec> frames, int index) {
     final p = c.p;
@@ -780,7 +770,6 @@ class _ViewCustomerDialogState extends State<ViewCustomerDialog> {
     );
   }
 
-  // ───────────── digital photo vault ─────────────
 
   Widget _vault(FormColors c, List<_VaultPhoto> photos) {
     final p = c.p;
@@ -802,7 +791,6 @@ class _ViewCustomerDialogState extends State<ViewCustomerDialog> {
           LayoutBuilder(
             builder: (context, cons) {
               const gap = 21.0;
-              // One photo → full width. Two or more → two columns.
               final cols = (photos.length == 1 || cons.maxWidth < 560) ? 1 : 2;
               final w = (cons.maxWidth - gap * (cols - 1)) / cols;
               return Wrap(
@@ -822,7 +810,6 @@ class _ViewCustomerDialogState extends State<ViewCustomerDialog> {
     );
   }
 
-  // ───────────────────────── footer ─────────────────────────
 
   Widget _footer(FormColors c) {
     final p = c.p;
@@ -844,10 +831,8 @@ class _ViewCustomerDialogState extends State<ViewCustomerDialog> {
           ),
           const SizedBox(width: 10),
 
-          // Send WhatsApp Receipt
           InkWell(
             onTap: () {
-              // Open WhatsApp with the receipt message for _c.phone
             },
             borderRadius: BorderRadius.circular(8),
             child: Container(
@@ -880,7 +865,6 @@ class _ViewCustomerDialogState extends State<ViewCustomerDialog> {
 
           const SizedBox(width: 10),
 
-          // Close
           InkWell(
             onTap: () => Navigator.of(context).pop(),
             borderRadius: BorderRadius.circular(8),
@@ -909,7 +893,6 @@ class _ViewCustomerDialogState extends State<ViewCustomerDialog> {
   }
 }
 
-// ───────────────────────── Vault card ─────────────────────────
 
 class _VaultCard extends StatefulWidget {
   const _VaultCard({required this.photo, required this.index});
@@ -1049,7 +1032,6 @@ class _VaultCardState extends State<_VaultCard> {
               ),
             ),
             const SizedBox(width: 12),
-            // "View" is intentionally a no-op for now.
             InkWell(
               borderRadius: BorderRadius.circular(20),
               onTap: () {},

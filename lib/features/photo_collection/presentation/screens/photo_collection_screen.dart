@@ -13,25 +13,6 @@ import 'package:raigon_art/core/theme/app_colors.dart';
 import 'package:raigon_art/core/theme/app_palette.dart';
 import 'package:raigon_art/core/widgets/app_snackbar.dart';
 
-/// ---------------------------------------------------------------------------
-/// CHROME DIRECTORY PICKER
-/// ---------------------------------------------------------------------------
-///
-/// This screen uses the Chrome File System Access API.
-///
-/// User selects a folder manually:
-///
-///     Select Photo Collection
-///             ↓
-///         Chrome Picker
-///             ↓
-///            Raigon
-///             ↓
-///      images are displayed
-///
-/// No localhost server is required.
-/// ---------------------------------------------------------------------------
-
 @JS('pickPhotoDirectory')
 external JSPromise<JSString?> _pickPhotoDirectory();
 
@@ -44,17 +25,9 @@ external JSPromise<JSString?> _refreshPhotoDirectory();
 @JS('restorePhotoDirectory')
 external JSPromise<JSString?> _restorePhotoDirectory();
 
-/// ---------------------------------------------------------------------------
-/// DEBUG LOGGING
-/// ---------------------------------------------------------------------------
-
 void _photoLog(String message) {
   debugPrint('[PHOTO_COLLECTION] $message');
 }
-
-/// ---------------------------------------------------------------------------
-/// PHOTO MODEL
-/// ---------------------------------------------------------------------------
 
 class PhotoItem {
   const PhotoItem({
@@ -71,10 +44,6 @@ class PhotoItem {
 
   String get sizeLabel => _formatFileSize(sizeBytes);
 }
-
-/// ---------------------------------------------------------------------------
-/// SCREEN
-/// ---------------------------------------------------------------------------
 
 class PhotoCollectionScreen extends StatefulWidget {
   const PhotoCollectionScreen({super.key});
@@ -95,10 +64,6 @@ class _PhotoCollectionScreenState extends State<PhotoCollectionScreen> {
   String? _folderName;
   String? _error;
 
-  /// -------------------------------------------------------------------------
-  /// INIT
-  /// -------------------------------------------------------------------------
-
   @override
   void initState() {
     super.initState();
@@ -107,10 +72,6 @@ class _PhotoCollectionScreenState extends State<PhotoCollectionScreen> {
       _restoreFolder();
     });
   }
-
-  /// -------------------------------------------------------------------------
-  /// SELECT FOLDER
-  /// -------------------------------------------------------------------------
 
   Future<void> _restoreFolder() async {
     if (!mounted) return;
@@ -380,10 +341,6 @@ class _PhotoCollectionScreenState extends State<PhotoCollectionScreen> {
     }
   }
 
-  /// -------------------------------------------------------------------------
-  /// REFRESH SELECTED FOLDER
-  /// -------------------------------------------------------------------------
-
   Future<void> _refreshFolder() async {
     if (!_hasFolder) {
       _photoLog('REFRESH: no folder selected, opening picker');
@@ -497,10 +454,6 @@ class _PhotoCollectionScreenState extends State<PhotoCollectionScreen> {
     }
   }
 
-  /// -------------------------------------------------------------------------
-  /// SEARCH
-  /// -------------------------------------------------------------------------
-
   List<PhotoItem> get _filtered {
     final q = _query.trim().toLowerCase();
 
@@ -513,17 +466,9 @@ class _PhotoCollectionScreenState extends State<PhotoCollectionScreen> {
         .toList();
   }
 
-  /// -------------------------------------------------------------------------
-  /// SELECTED
-  /// -------------------------------------------------------------------------
-
   List<PhotoItem> get _selectedItems {
     return _photos.where((photo) => _selected.contains(photo.id)).toList();
   }
-
-  /// -------------------------------------------------------------------------
-  /// TOGGLE
-  /// -------------------------------------------------------------------------
 
   void _toggle(PhotoItem photo) {
     setState(() {
@@ -532,10 +477,6 @@ class _PhotoCollectionScreenState extends State<PhotoCollectionScreen> {
       }
     });
   }
-
-  /// -------------------------------------------------------------------------
-  /// DOWNLOAD
-  /// -------------------------------------------------------------------------
 
   Future<void> _download(List<PhotoItem> items) async {
     if (items.isEmpty) return;
@@ -583,10 +524,6 @@ class _PhotoCollectionScreenState extends State<PhotoCollectionScreen> {
       );
     }
   }
-
-  /// -------------------------------------------------------------------------
-  /// DELETE SELECTED
-  /// -------------------------------------------------------------------------
 
   Future<void> _deleteSelected() async {
     final items = _selectedItems;
@@ -642,10 +579,6 @@ class _PhotoCollectionScreenState extends State<PhotoCollectionScreen> {
     }
   }
 
-  /// -------------------------------------------------------------------------
-  /// PREVIEW
-  /// -------------------------------------------------------------------------
-
   void _preview(PhotoItem photo) {
     showGeneralDialog(
       context: context,
@@ -666,10 +599,6 @@ class _PhotoCollectionScreenState extends State<PhotoCollectionScreen> {
       },
     );
   }
-
-  /// -------------------------------------------------------------------------
-  /// BUILD
-  /// -------------------------------------------------------------------------
 
   @override
   void dispose() {
@@ -747,18 +676,11 @@ class _PhotoCollectionScreenState extends State<PhotoCollectionScreen> {
         },
       );
     }
-
-    // The list keeps its horizontal scrolling while the outer scroll
-    // allows the photo rows to move vertically inside the card.
     return SingleChildScrollView(
       padding: const EdgeInsets.only(bottom: 8),
       child: _list(p, list),
     );
   }
-
-  /// -------------------------------------------------------------------------
-  /// TITLE
-  /// -------------------------------------------------------------------------
 
   Widget _titleRow(AppPalette p) {
     final n = _selected.length;
@@ -816,10 +738,6 @@ class _PhotoCollectionScreenState extends State<PhotoCollectionScreen> {
       ],
     );
   }
-
-  /// -------------------------------------------------------------------------
-  /// FOLDER CARD
-  /// -------------------------------------------------------------------------
 
   Widget _folderCard(AppPalette p) {
     return Container(
@@ -893,10 +811,6 @@ class _PhotoCollectionScreenState extends State<PhotoCollectionScreen> {
     );
   }
 
-  /// -------------------------------------------------------------------------
-  /// SELECT FOLDER EMPTY STATE
-  /// -------------------------------------------------------------------------
-
   Widget _selectFolderView(AppPalette p) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 80),
@@ -952,10 +866,6 @@ class _PhotoCollectionScreenState extends State<PhotoCollectionScreen> {
     );
   }
 
-  /// -------------------------------------------------------------------------
-  /// ACTION BUTTON
-  /// -------------------------------------------------------------------------
-
   Widget _actionButton(
     AppPalette p, {
     required IconData icon,
@@ -1000,10 +910,6 @@ class _PhotoCollectionScreenState extends State<PhotoCollectionScreen> {
     );
   }
 
-  /// -------------------------------------------------------------------------
-  /// SMALL ICON BUTTON
-  /// -------------------------------------------------------------------------
-
   Widget _smallIconButton(
     AppPalette p, {
     required IconData icon,
@@ -1031,10 +937,6 @@ class _PhotoCollectionScreenState extends State<PhotoCollectionScreen> {
       ),
     );
   }
-
-  /// -------------------------------------------------------------------------
-  /// VIEW TOGGLE
-  /// -------------------------------------------------------------------------
 
   Widget _viewToggle(AppPalette p) {
     Widget btn(IconData icon, bool grid) {
@@ -1080,10 +982,6 @@ class _PhotoCollectionScreenState extends State<PhotoCollectionScreen> {
       ),
     );
   }
-
-  /// -------------------------------------------------------------------------
-  /// SEARCH
-  /// -------------------------------------------------------------------------
 
   Widget _searchCard(AppPalette p, int count) {
     return Container(
@@ -1143,10 +1041,6 @@ class _PhotoCollectionScreenState extends State<PhotoCollectionScreen> {
     );
   }
 
-  /// -------------------------------------------------------------------------
-  /// LOADING
-  /// -------------------------------------------------------------------------
-
   Widget _loadingView(AppPalette p) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 70),
@@ -1172,10 +1066,6 @@ class _PhotoCollectionScreenState extends State<PhotoCollectionScreen> {
       ),
     );
   }
-
-  /// -------------------------------------------------------------------------
-  /// ERROR
-  /// -------------------------------------------------------------------------
 
   Widget _errorView(AppPalette p) {
     return Padding(
@@ -1219,10 +1109,6 @@ class _PhotoCollectionScreenState extends State<PhotoCollectionScreen> {
     );
   }
 
-  /// -------------------------------------------------------------------------
-  /// EMPTY
-  /// -------------------------------------------------------------------------
-
   Widget _emptyView(AppPalette p) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 70),
@@ -1252,10 +1138,6 @@ class _PhotoCollectionScreenState extends State<PhotoCollectionScreen> {
     );
   }
 
-  /// -------------------------------------------------------------------------
-  /// GRID
-  /// -------------------------------------------------------------------------
-
   Widget _grid(AppPalette p, List<PhotoItem> list) {
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -1276,10 +1158,6 @@ class _PhotoCollectionScreenState extends State<PhotoCollectionScreen> {
       },
     );
   }
-
-  /// -------------------------------------------------------------------------
-  /// GRID CARD
-  /// -------------------------------------------------------------------------
 
   Widget _gridCard(AppPalette p, PhotoItem photo) {
     final checked = _selected.contains(photo.id);
@@ -1366,10 +1244,6 @@ class _PhotoCollectionScreenState extends State<PhotoCollectionScreen> {
     );
   }
 
-  /// -------------------------------------------------------------------------
-  /// IMAGE ERROR
-  /// -------------------------------------------------------------------------
-
   Widget _imageError(AppPalette p) {
     return Container(
       color: p.surface,
@@ -1377,10 +1251,6 @@ class _PhotoCollectionScreenState extends State<PhotoCollectionScreen> {
       child: Icon(Icons.broken_image_outlined, size: 42, color: p.textMuted),
     );
   }
-
-  /// -------------------------------------------------------------------------
-  /// LIST
-  /// -------------------------------------------------------------------------
 
   static const _flex = [9, 11, 34, 14, 10];
 
@@ -1441,10 +1311,6 @@ class _PhotoCollectionScreenState extends State<PhotoCollectionScreen> {
       ),
     );
   }
-
-  /// -------------------------------------------------------------------------
-  /// LIST ROW
-  /// -------------------------------------------------------------------------
 
   Widget _listRow(AppPalette p, PhotoItem photo, bool last) {
     Widget cell(int index, Widget child) {
@@ -1538,10 +1404,6 @@ class _PhotoCollectionScreenState extends State<PhotoCollectionScreen> {
   }
 }
 
-/// ---------------------------------------------------------------------------
-/// CHECKBOX
-/// ---------------------------------------------------------------------------
-
 class _Check extends StatelessWidget {
   const _Check({required this.checked, required this.grid, required this.dark});
 
@@ -1583,10 +1445,6 @@ class _Check extends StatelessWidget {
     );
   }
 }
-
-/// ---------------------------------------------------------------------------
-/// PREVIEW OVERLAY
-/// ---------------------------------------------------------------------------
 
 class _PreviewOverlay extends StatelessWidget {
   const _PreviewOverlay({required this.photo, required this.onDownload});
@@ -1833,10 +1691,6 @@ class _PreviewOverlay extends StatelessWidget {
   }
 }
 
-/// ---------------------------------------------------------------------------
-/// SIZE
-/// ---------------------------------------------------------------------------
-
 int _parseSize(dynamic value) {
   if (value is int) {
     return value;
@@ -1848,10 +1702,6 @@ int _parseSize(dynamic value) {
 
   return int.tryParse('$value') ?? 0;
 }
-
-/// ---------------------------------------------------------------------------
-/// FILE SIZE
-/// ---------------------------------------------------------------------------
 
 String _formatFileSize(int bytes) {
   if (bytes < 1024) {
@@ -1875,10 +1725,6 @@ String _formatFileSize(int bytes) {
   return '${gb.toStringAsFixed(2)} GB';
 }
 
-/// ---------------------------------------------------------------------------
-/// EXTENSION
-/// ---------------------------------------------------------------------------
-
 String _fileExtension(String fileName) {
   final index = fileName.lastIndexOf('.');
 
@@ -1888,10 +1734,6 @@ String _fileExtension(String fileName) {
 
   return fileName.substring(index + 1).toLowerCase();
 }
-
-/// ---------------------------------------------------------------------------
-/// MIME TYPE
-/// ---------------------------------------------------------------------------
 
 MimeType _mimeType(String extension) {
   switch (extension) {
@@ -1913,10 +1755,6 @@ MimeType _mimeType(String extension) {
       return MimeType.jpeg;
   }
 }
-
-/// ---------------------------------------------------------------------------
-/// ERROR CLEANUP
-/// ---------------------------------------------------------------------------
 
 String _cleanError(Object error) {
   final message = error.toString();

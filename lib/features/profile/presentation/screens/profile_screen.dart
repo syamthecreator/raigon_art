@@ -3,17 +3,14 @@ import 'package:raigon_art/core/constants/asset_constants.dart';
 import 'package:raigon_art/core/theme/app_colors.dart';
 import 'package:raigon_art/core/theme/app_palette.dart';
 
-/// Read-only business profile for Raigon Arts (photo frames & framing shop).
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
-  // ── Contact ──
   static const String _businessName = 'Raigon Arts';
   static const String _tagline = 'Photo Frames & Custom Framing';
   static const String _businessPhone = '+91 8921348433';
   static const String _businessEmail = 'orders@raigonarts.com';
 
-  // ── Business details (TODO: edit these to your real values) ──
   static const String _businessType = 'Photo Frames & Framing Workshop';
   static const String _specialization = 'Custom & Ready-made Frames';
   static const String _materials = 'Wood, Metal, Acrylic, Glass';
@@ -59,7 +56,6 @@ class ProfileScreen extends StatelessWidget {
     ),
   ];
 
-  // Weekday: 1 = Monday ... 7 = Sunday (matches DateTime.weekday).
   static const List<_Hours> _hours = [
     _Hours(1, 'Monday', '9:30 AM – 8:00 PM'),
     _Hours(2, 'Tuesday', '9:30 AM – 8:00 PM'),
@@ -127,8 +123,7 @@ class ProfileScreen extends StatelessWidget {
                                 _InfoItem(
                                   icon: Icons.location_on_outlined,
                                   label: 'Workshop Address',
-                                  value:
-                                      'Main Workshop, MG Road, Overbridge Junction',
+                                  value: 'Main Workshop, MG Road, Overbridge Junction',
                                 ),
                                 _InfoItem(
                                   icon: Icons.location_city_outlined,
@@ -224,9 +219,6 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  // ───────────────────────── Layout helpers ─────────────────────────
-
-  /// Side by side on wide screens, stacked on narrow ones.
   Widget _twoColumn(Widget left, Widget right) {
     return LayoutBuilder(
       builder: (context, c) {
@@ -250,9 +242,12 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  /// Wraps [children] into an evenly sized grid of [columns] columns.
-  Widget _grid(double maxWidth, int columns, List<Widget> children,
-      {double gap = 14}) {
+  Widget _grid(
+    double maxWidth,
+    int columns,
+    List<Widget> children, {
+    double gap = 14,
+  }) {
     final w = (maxWidth - gap * (columns - 1)) / columns;
     return Wrap(
       spacing: gap,
@@ -309,8 +304,6 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  // ───────────────────────── Title ─────────────────────────
-
   Widget _title(AppPalette p) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -331,8 +324,6 @@ class ProfileScreen extends StatelessWidget {
       ],
     );
   }
-
-  // ───────────────────────── Hero Card ─────────────────────────
 
   Widget _heroCard(AppPalette p) {
     final chipFg = p.isDark ? AppColors.gold : AppPalette.statusGold;
@@ -410,8 +401,6 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  // ───────────────────────── Info Card ─────────────────────────
-
   Widget _infoCard(
     AppPalette p, {
     required String title,
@@ -462,8 +451,6 @@ class ProfileScreen extends StatelessWidget {
       ],
     );
   }
-
-  // ───────────────────────── Services ─────────────────────────
 
   Widget _servicesCard(AppPalette p) {
     return _cardShell(
@@ -521,8 +508,6 @@ class ProfileScreen extends StatelessWidget {
       ),
     );
   }
-
-  // ───────────────────────── Business Hours ─────────────────────────
 
   Widget _hoursCard(AppPalette p) {
     final today = DateTime.now().weekday;
@@ -587,8 +572,6 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  // ───────────────────────── Order Process ─────────────────────────
-
   Widget _processCard(AppPalette p) {
     return _cardShell(
       p,
@@ -597,7 +580,8 @@ class ProfileScreen extends StatelessWidget {
         builder: (context, c) {
           final cols = c.maxWidth < 560 ? 1 : (c.maxWidth < 900 ? 2 : 4);
           return _grid(c.maxWidth, cols, [
-            for (var i = 0; i < _steps.length; i++) _stepTile(p, i + 1, _steps[i]),
+            for (var i = 0; i < _steps.length; i++)
+              _stepTile(p, i + 1, _steps[i]),
           ]);
         },
       ),
@@ -655,8 +639,6 @@ class ProfileScreen extends StatelessWidget {
   }
 }
 
-// ───────────────────────── Data models ─────────────────────────
-
 class _InfoItem {
   const _InfoItem({
     required this.icon,
@@ -670,11 +652,7 @@ class _InfoItem {
 }
 
 class _Service {
-  const _Service({
-    required this.icon,
-    required this.title,
-    required this.desc,
-  });
+  const _Service({required this.icon, required this.title, required this.desc});
 
   final IconData icon;
   final String title;

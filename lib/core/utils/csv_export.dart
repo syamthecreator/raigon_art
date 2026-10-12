@@ -27,28 +27,19 @@ Future<void> downloadCsv(String fileName, String content) async {
     debugPrint('Blob created successfully');
 
     final url = web.URL.createObjectURL(blob);
-
     debugPrint('Object URL created');
-
     final anchor = web.document.createElement('a') as web.HTMLAnchorElement
       ..href = url
       ..download = fileName
       ..style.display = 'none';
 
     web.document.body?.append(anchor);
-
     debugPrint('Download anchor appended');
-
     anchor.click();
-
     debugPrint('Download triggered');
-
     anchor.remove();
-
     web.URL.revokeObjectURL(url);
-
     debugPrint('Object URL revoked');
-
     debugPrint('WEB CSV DOWNLOAD SUCCESS');
   } catch (e, stackTrace) {
     debugPrint('WEB CSV DOWNLOAD ERROR');

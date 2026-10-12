@@ -12,7 +12,7 @@ import 'package:raigon_art/features/customers/presentation/widgets/add_customer_
 import 'package:raigon_art/features/customers/presentation/widgets/customer_view_dialog.dart';
 import 'package:raigon_art/core/models/status.dart';
 import 'package:raigon_art/core/widgets/shell_scope.dart';
-import 'package:raigon_art/features/customers/providers/customer_provider.dart';
+import 'package:raigon_art/core/provider/customer_and_order_provider.dart';
 
 class OrdersScreen extends StatefulWidget {
   const OrdersScreen({super.key});
@@ -22,7 +22,6 @@ class OrdersScreen extends StatefulWidget {
 }
 
 class _OrdersScreenState extends State<OrdersScreen> {
-  // null = All
   Status? _filter;
   String _query = '';
   static const int _pageSize = 10;
@@ -41,18 +40,15 @@ class _OrdersScreenState extends State<OrdersScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        context.read<CustomerProvider>().init();
+        context.read<CustomerAndOrderProvider>().init();
       }
     });
   }
 
   int _page = 1;
 
-  /// Local status overrides made through the status dropdown.
   final Map<String, Status> _statusOverride = {};
 
-  // Column flex values:
-  // id, customer, phone, photos, specs, qty, total, payment, status, delivery, actions
   static const _flex = [
     15, // Order ID
     20, // Customer
@@ -144,16 +140,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
   @override
   Widget build(BuildContext context) {
     final p = AppPalette.of(context);
-
-    final customerProvider = context.watch<CustomerProvider>();
-
+    final customerProvider = context.watch<CustomerAndOrderProvider>();
     final all = customerProvider.customers;
-
-    int count(Status? s) =>
-        s == null ? all.length : all.where((c) => _statusOf(c) == s).length;
-
     final q = _query.trim().toLowerCase();
-
     final rows = all.where((c) {
       if (_filter != null && _statusOf(c) != _filter) {
         return false;
@@ -163,65 +152,43 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
       return c.id.toLowerCase().contains(q) || c.name.toLowerCase().contains(q);
     }).toList();
-
     final totalPages = math.max(1, (rows.length / _pageSize).ceil());
-
     final currentPage = _page.clamp(1, totalPages);
-
     final pageRows = rows
         .skip((currentPage - 1) * _pageSize)
         .take(_pageSize)
         .toList();
 
+    int count(Status? s) =>
+        s == null ? all.length : all.where((c) => _statusOf(c) == s).length;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
-
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-
         children: [
           _titleRow(p),
-
           const SizedBox(height: 24),
-
           _tabs(p, count),
-
           const SizedBox(height: 20),
-
-          // Card fills the remaining screen height.
           Expanded(
             child: Container(
               width: double.infinity,
-
               decoration: p.card(radius: 16),
-
               clipBehavior: Clip.antiAlias,
-
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
-
                 children: [
-                  // Search toolbar.
-
                   Padding(
                     padding: const EdgeInsets.all(20),
-
                     child: _searchField(p),
                   ),
-
-                  // Table occupies the available space.
                   Expanded(child: _table(p, pageRows)),
-
-                  // Footer stays at the bottom.
                   AppPaginationFooter(
                     totalItems: rows.length,
-
                     page: currentPage,
-
                     pageSize: _pageSize,
-
                     itemLabel: 'orders',
-
                     onPageChanged: (newPage) {
                       setState(() => _page = newPage);
                     },
@@ -234,8 +201,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
       ),
     );
   }
-
-  // ───────────────────────── Title row ─────────────────────────
 
   Widget _titleRow(AppPalette p) {
     return Row(
@@ -270,8 +235,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
       ],
     );
   }
-
-  // ───────────────────────── Tabs ─────────────────────────
 
   Widget _tabs(AppPalette p, int Function(Status?) count) {
     final items = <(String, Status?)>[
@@ -328,8 +291,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
     );
   }
 
-  // ───────────────────────── Search ─────────────────────────
-
   Widget _searchField(AppPalette p) {
     return Align(
       alignment: Alignment.centerLeft,
@@ -365,8 +326,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
     );
   }
 
-  // ───────────────────────── Table ─────────────────────────
-
   Widget _table(AppPalette p, List<Customer> rows) {
     return LayoutBuilder(
       builder: (context, c) {
@@ -398,10 +357,8 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Fixed table header.
                     _headerRow(p),
 
-                    // Vertically scrollable table body.
                     Expanded(
                       child: Scrollbar(
                         controller: _verticalController,
@@ -501,8 +458,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
     );
   }
 }
-
-// ───────────────────────── Row ─────────────────────────
 
 class _OrderRow extends StatefulWidget {
   const _OrderRow({

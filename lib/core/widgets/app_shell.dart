@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:raigon_art/app/app_router.dart';
+import 'package:raigon_art/core/provider/customer_and_order_provider.dart';
 import 'package:raigon_art/core/theme/app_palette.dart';
 import 'package:raigon_art/features/customers/presentation/widgets/add_customer_dialog.dart';
 import 'package:raigon_art/core/widgets/app_sidebar.dart';
@@ -25,6 +27,17 @@ class AppShell extends StatefulWidget {
 }
 
 class _AppShellState extends State<AppShell> {
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      context.read<CustomerAndOrderProvider>().init();
+    });
+  }
+
   NavDestination _current = NavDestination.dashboard;
   bool? _collapsedOverride;
   bool _showNotifications = false;

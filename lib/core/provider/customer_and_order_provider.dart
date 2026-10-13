@@ -9,7 +9,7 @@ import 'package:raigon_art/features/customers/repository/customer_repository.dar
 
 class CustomerAndOrderProvider extends ChangeNotifier {
   CustomerAndOrderProvider({CustomerRepository? repository})
-    : _repository = repository ?? LocalCustomerRepository();
+    : _repository = repository ?? FirestoreCustomerRepository();
 
   final CustomerRepository _repository;
 
@@ -24,7 +24,15 @@ class CustomerAndOrderProvider extends ChangeNotifier {
   Object? get error => _error;
 
   Future<void> init() async {
-    if (_initialized || _isLoading) return;
+    if (_initialized || _isLoading) {
+      debugPrint(
+        '[CustomerProvider] Init skipped. '
+        'Initialized: $_initialized, Loading: $_isLoading',
+      );
+      return;
+    }
+
+    debugPrint('[CustomerProvider] Initializing customer data...');
 
     _isLoading = true;
     _error = null;
@@ -33,8 +41,14 @@ class CustomerAndOrderProvider extends ChangeNotifier {
     try {
       _customers = await _repository.getAll();
       _initialized = true;
-    } catch (error) {
+
+      debugPrint('[CustomerProvider] Loaded ${_customers.length} customers.');
+    } catch (error, stackTrace) {
       _error = error;
+
+      debugPrint('[CustomerProvider] Initialization failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
+
       rethrow;
     } finally {
       _isLoading = false;

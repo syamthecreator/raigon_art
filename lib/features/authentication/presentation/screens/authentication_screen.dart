@@ -54,20 +54,25 @@ class _AuthScreenState extends State<AuthScreen> {
     final pass = _passwordCtrl.text;
 
     if (user.isEmpty) {
-      AppSnackBar.error(context, 'Enter your phone number or username.');
+      AppSnackBar.error(context, 'Enter your username.');
       return;
     }
+
     if (pass.isEmpty) {
       AppSnackBar.error(context, 'Enter your password.');
       return;
     }
 
     final ok = await _auth.signIn(user, pass);
+
     if (!mounted) return;
 
     if (ok) {
-      AppSnackBar.success(context, 'Welcome to Raigon Arts Management System!');
-      Navigator.pushReplacementNamed(context, AppRouter.dashboard);
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        AppRouter.dashboard,
+        (route) => false,
+      );
     } else {
       AppSnackBar.error(
         context,

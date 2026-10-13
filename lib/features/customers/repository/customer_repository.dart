@@ -1,8 +1,6 @@
-import 'dart:convert';
-
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:raigon_art/features/customers/models/customer_model.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 abstract class CustomerRepository {
   Future<List<Customer>> getAll();
@@ -10,85 +8,82 @@ abstract class CustomerRepository {
   Future<void> delete(String id);
 }
 
-class LocalCustomerRepository implements CustomerRepository {
-  static const String _key = 'raigon_customers_v1';
+class FirestoreCustomerRepository implements CustomerRepository {
+  FirestoreCustomerRepository({FirebaseFirestore? firestore})
+    : _firestore = firestore ?? FirebaseFirestore.instance;
 
-  Future<void> _queue = Future<void>.value();
+  final FirebaseFirestore _firestore;
 
-  Future<List<Customer>> _read() async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_key);
+  CollectionReference<Map<String, dynamic>> get _customers =>
+      _firestore.collection('customers');
 
-    if (raw == null || raw.isEmpty) return [];
+  @override
+  Future<List<Customer>> getAll() async {
+    debugPrint('[CustomerRepository] Fetching customers from Firestore...');
 
     try {
-      final decoded = jsonDecode(raw) as List;
+      final snapshot = await _customers.get();
 
-      return [
-        for (final item in decoded)
-          Customer.fromJson(Map<String, dynamic>.from(item as Map)),
-      ];
+      debugPrint(
+        '[CustomerRepository] Documents received: ${snapshot.docs.length}',
+      );
+
+      final customers = <Customer>[];
+
+      for (final doc in snapshot.docs) {
+        try {
+          final data = doc.data();
+
+          debugPrint('[CustomerRepository] Parsing document: ${doc.id}');
+          debugPrint('[CustomerRepository] Fields: ${data.keys.toList()}');
+
+          final customer = Customer.fromJson({...data, 'id': doc.id});
+
+          customers.add(customer);
+          debugPrint(
+            '[CustomerRepository] Parsed successfully: '
+            '${customer.id} - ${customer.name}',
+          );
+        } catch (error, stackTrace) {
+          debugPrint('[CustomerRepository] Failed to parse ${doc.id}: $error');
+          debugPrintStack(stackTrace: stackTrace);
+          rethrow;
+        }
+      }
+
+      debugPrint(
+        '[CustomerRepository] Successfully loaded ${customers.length} customers.',
+      );
+
+      return customers;
     } catch (error, stackTrace) {
-      debugPrint('Failed to read customers: $error\n$stackTrace');
+      debugPrint('[CustomerRepository] Firestore load failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
       rethrow;
     }
   }
 
-  Future<void> _write(List<Customer> customers) async {
-    final prefs = await SharedPreferences.getInstance();
+  @override
+  Future<void> upsert(Customer customer) async {
+    try {
+      final data = customer.toJson()..remove('id');
 
-    final saved = await prefs.setString(
-      _key,
-      jsonEncode([for (final customer in customers) customer.toJson()]),
-    );
-
-    if (!saved) {
-      throw StateError('Could not save customers locally.');
+      await _customers.doc(customer.id).set(data);
+    } catch (error, stackTrace) {
+      debugPrint('Failed to save customer ${customer.id}: $error');
+      debugPrintStack(stackTrace: stackTrace);
+      rethrow;
     }
   }
 
-  Future<void> _enqueue(Future<void> Function() job) {
-    final next = _queue.then((_) => job());
-
-    _queue = next.then<void>(
-      (_) {},
-      onError: (Object error, StackTrace stackTrace) {
-        debugPrint('Customer persistence failed: $error');
-      },
-    );
-
-    return next;
-  }
-
   @override
-  Future<List<Customer>> getAll() async {
-    await _queue;
-    return _read();
-  }
-
-  @override
-  Future<void> upsert(Customer customer) {
-    return _enqueue(() async {
-      final list = await _read();
-      final index = list.indexWhere((c) => c.id == customer.id);
-
-      if (index == -1) {
-        list.insert(0, customer);
-      } else {
-        list[index] = customer;
-      }
-
-      await _write(list);
-    });
-  }
-
-  @override
-  Future<void> delete(String id) {
-    return _enqueue(() async {
-      final list = await _read()
-        ..removeWhere((customer) => customer.id == id);
-
-      await _write(list);
-    });
+  Future<void> delete(String id) async {
+    try {
+      await _customers.doc(id).delete();
+    } catch (error, stackTrace) {
+      debugPrint('Failed to delete customer $id: $error');
+      debugPrintStack(stackTrace: stackTrace);
+      rethrow;
+    }
   }
 }

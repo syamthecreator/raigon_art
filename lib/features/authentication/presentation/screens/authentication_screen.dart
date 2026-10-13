@@ -19,12 +19,12 @@ class AuthScreen extends StatefulWidget {
 }
 
 class _AuthScreenState extends State<AuthScreen> {
-  final _usernameCtrl = TextEditingController(text: 'admin');
+  final _usernameCtrl = TextEditingController(text: AuthModel.adminEmail);
   final _passwordCtrl = TextEditingController(text: 'admin123');
   final _phoneCtrl = TextEditingController();
-  final _otpCtrl = TextEditingController(text: '1234');
-  final _newPassCtrl = TextEditingController(text: '1234567890');
-  final _confirmPassCtrl = TextEditingController(text: '1234567890');
+  final _otpCtrl = TextEditingController(text: AuthModel.mockOtp);
+  final _newPassCtrl = TextEditingController(text: AuthModel.newPassword);
+  final _confirmPassCtrl = TextEditingController(text: AuthModel.newPassword);
 
   bool _hidePassword = true;
   bool _hideNewPass = true;
@@ -54,7 +54,7 @@ class _AuthScreenState extends State<AuthScreen> {
     final pass = _passwordCtrl.text;
 
     if (user.isEmpty) {
-      AppSnackBar.error(context, 'Enter your username.');
+      AppSnackBar.error(context, 'Enter your mobile number or email.');
       return;
     }
 
@@ -73,10 +73,14 @@ class _AuthScreenState extends State<AuthScreen> {
         AppRouter.dashboard,
         (route) => false,
       );
+
+      final role = context.read<AuthProvider>().userRole;
+
+      debugPrint('Logged-in role: $role');
     } else {
       AppSnackBar.error(
         context,
-        _auth.errorMessage ?? 'Invalid username or password.',
+        _auth.errorMessage ?? 'Invalid mobile number/email or password.',
       );
     }
   }
@@ -283,7 +287,7 @@ class _AuthScreenState extends State<AuthScreen> {
           subtitle: 'Please sign in to access your workshop dashboard.',
         ),
         const SizedBox(height: 40),
-        const AuthFieldLabel('Phone Number / Username'),
+        const AuthFieldLabel('Mobile Number / Email'),
         AuthTextField(
           controller: _usernameCtrl,
           prefixIcon: Icons.person,

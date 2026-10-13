@@ -33,6 +33,21 @@ extension NavDestinationX on NavDestination {
     NavDestination.reports => Icons.bar_chart,
     NavDestination.profile => Icons.storefront_outlined,
   };
+
+  /// Screens Staff members are allowed to access.
+  bool get isStaffAllowed => switch (this) {
+    NavDestination.customers ||
+    NavDestination.orders ||
+    NavDestination.photoCollection ||
+    NavDestination.frameSizes ||
+    NavDestination.profile => true,
+    _ => false,
+  };
+
+  /// Checks access for the current role.
+  bool canAccess({required bool isAdmin}) {
+    return isAdmin || isStaffAllowed;
+  }
 }
 
 class ShellScope extends InheritedWidget {

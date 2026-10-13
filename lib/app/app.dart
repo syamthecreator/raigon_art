@@ -7,6 +7,7 @@ import 'package:raigon_art/core/provider/pagination_provider.dart';
 import 'package:raigon_art/core/theme/theme_controller.dart';
 import 'package:raigon_art/features/authentication/providers/auth_provider.dart';
 import 'package:raigon_art/core/provider/customer_and_order_provider.dart';
+import 'package:raigon_art/features/customers/provider/customers_screen_provider.dart';
 import 'package:raigon_art/features/frame_sizes/providers/frame_size_provider.dart';
 import 'package:raigon_art/features/messaging_automation/providers/messaging_automation_provider.dart';
 
@@ -32,6 +33,8 @@ class RaigonartApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => CustomerAndOrderProvider()),
         ChangeNotifierProvider(create: (_) => FrameSizeProvider()),
         ChangeNotifierProvider(create: (_) => MessagingAutomationProvider()),
+        ChangeNotifierProvider(create: (_) => CustomersScreenProvider()),
+        // ChangeNotifierProvider(create: (_) => AddCustomerProvider()),
       ],
       child: AnnotatedRegion<SystemUiOverlayStyle>(
         value: const SystemUiOverlayStyle(

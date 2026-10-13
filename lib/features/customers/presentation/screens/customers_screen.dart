@@ -17,16 +17,7 @@ import 'package:raigon_art/features/customers/presentation/widgets/customers_tab
 import 'package:raigon_art/core/models/status.dart';
 import 'package:raigon_art/core/widgets/shell_scope.dart';
 import 'package:raigon_art/core/provider/customer_and_order_provider.dart';
-
-enum SortOption {
-  newest('Newest First'),
-  oldest('Oldest First'),
-  name('Name (A-Z)'),
-  amount('Total Amount (High-Low)');
-
-  const SortOption(this.label);
-  final String label;
-}
+import 'package:raigon_art/features/customers/provider/customers_screen_provider.dart';
 
 class CustomersScreen extends StatefulWidget {
   const CustomersScreen({super.key});
@@ -38,7 +29,7 @@ class CustomersScreen extends StatefulWidget {
 class _CustomersScreenState extends State<CustomersScreen> {
   final _searchCtrl = TextEditingController();
   Status? _status;
-  SortOption _sort = SortOption.newest;
+  final SortOption _sort = SortOption.newest;
 
   Future<void> _edit(Customer c) => showEditCustomerDialog(context, c);
 
@@ -125,10 +116,11 @@ class _CustomersScreenState extends State<CustomersScreen> {
   @override
   Widget build(BuildContext context) {
     context.watch<CustomerAndOrderProvider>();
-    final pagination = context.watch<PaginationProvider>();
     final p = AppPalette.of(context);
-
-    final all = _filtered;
+    final screenProvider = context.watch<CustomersScreenProvider>();
+    final customerProvider = context.watch<CustomerAndOrderProvider>();
+    final pagination = context.watch<PaginationProvider>();
+    final all = screenProvider.filteredCustomers(customerProvider.customers);
     final pageItems = pagination.paginate(all);
 
     return LayoutBuilder(
@@ -269,9 +261,9 @@ class _CustomersScreenState extends State<CustomersScreen> {
       height: 46,
       child: TextField(
         controller: _searchCtrl,
-        onChanged: (_) {
+        onChanged: (value) {
+          context.read<CustomersScreenProvider>().setSearchQuery(value);
           context.read<PaginationProvider>().resetPage();
-          setState(() {});
         },
         cursorColor: p.textPrimary,
         style: TextStyle(fontSize: 15, color: p.textPrimary),
@@ -291,23 +283,24 @@ class _CustomersScreenState extends State<CustomersScreen> {
 
   Widget _toolbar(AppPalette p, bool wide) {
     final status = AppDropdown<Status?>(
-      value: _status,
+      value: context.watch<CustomersScreenProvider>().status,
       items: [null, ...Status.values],
       labelOf: (status) => status?.label ?? 'All Statuses',
       width: 175,
       onChanged: (value) {
-        setState(() {
-          _status = value;
-          context.read<PaginationProvider>().resetPage();
-        });
+        context.read<CustomersScreenProvider>().setStatus(value);
+        context.read<PaginationProvider>().resetPage();
       },
     );
     final sort = AppDropdown<SortOption>(
-      value: _sort,
+      value: context.watch<CustomersScreenProvider>().sort,
       items: SortOption.values,
       labelOf: (s) => s.label,
       width: 200,
-      onChanged: (v) => setState(() => _sort = v),
+      onChanged: (value) {
+        context.read<CustomersScreenProvider>().setSort(value);
+        context.read<PaginationProvider>().resetPage();
+      },
     );
     if (wide) {
       return Row(

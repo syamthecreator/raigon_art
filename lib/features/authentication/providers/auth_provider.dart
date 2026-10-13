@@ -6,6 +6,7 @@ import 'package:raigon_art/features/authentication/services/auth_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   static const int _resendSeconds = 120;
+  String? get userRole => _state.userRole;
 
   AuthModel _state = const AuthModel();
   Timer? _timer;
@@ -23,24 +24,51 @@ class AuthProvider extends ChangeNotifier {
   String get mockOtp => AuthModel.mockOtp;
   String get timeText => _state.timeText;
 
-  void _update(AuthModel state) {
-    _state = state;
+  void _update(AuthModel newState) {
+    _state = newState;
     notifyListeners();
   }
 
-  void _setLoading(bool value) {
+  Future<bool> _execute(
+    Future<bool> Function() action,
+    String failureMessage,
+  ) async {
+    if (isLoading) return false;
+
     _update(
-      _state.copyWith(isLoading: value, clearError: value, clearSuccess: value),
+      _state.copyWith(isLoading: true, clearError: true, clearSuccess: true),
     );
+
+    try {
+      final success = await action();
+
+      _update(
+        _state.copyWith(
+          isLoading: false,
+          errorMessage: success ? null : failureMessage,
+          clearError: success,
+        ),
+      );
+
+      return success;
+    } catch (error) {
+      debugPrint('[AuthProvider] Authentication operation failed: $error');
+
+      _update(_state.copyWith(isLoading: false, errorMessage: failureMessage));
+
+      return false;
+    }
   }
 
-  void goTo(AuthStep step) {
-    if (step == AuthStep.signIn) {
+  void goTo(AuthStep nextStep) {
+    if (nextStep == AuthStep.signIn) {
       backToSignIn();
       return;
     }
 
-    _update(_state.copyWith(step: step, clearError: true, clearSuccess: true));
+    _update(
+      _state.copyWith(step: nextStep, clearError: true, clearSuccess: true),
+    );
   }
 
   void backToSignIn() {
@@ -57,192 +85,112 @@ class AuthProvider extends ChangeNotifier {
     );
   }
 
-  Future<bool> signIn(String usernameOrPhone, String password) async {
+  Future<bool> signIn(String identifier, String password) async {
     if (isLoading) return false;
 
-    _setLoading(true);
+    _update(
+      _state.copyWith(
+        isLoading: true,
+        clearError: true,
+        clearSuccess: true,
+        clearRole: true,
+      ),
+    );
 
     try {
-      final success = await AuthService.signIn(usernameOrPhone, password);
+      final role = await AuthService.signIn(identifier, password);
+      final success = role != null;
 
-      if (success) {
-        _update(
-          _state.copyWith(
-            isLoading: false,
-            isAuthenticated: true,
-            clearError: true,
-          ),
-        );
-        return true;
-      }
+      _update(
+        _state.copyWith(
+          isLoading: false,
+          isAuthenticated: success,
+          userRole: role,
+          errorMessage: success
+              ? null
+              : 'Invalid mobile number/email or password.',
+          clearError: success,
+        ),
+      );
+
+      return success;
+    } catch (error) {
+      debugPrint('[AuthProvider] Sign-in failed: $error');
 
       _update(
         _state.copyWith(
           isLoading: false,
           isAuthenticated: false,
-          errorMessage: 'Invalid username or password.',
-        ),
-      );
-      return false;
-    } catch (_) {
-      _update(
-        _state.copyWith(
-          isLoading: false,
           errorMessage: 'Unable to sign in. Please try again.',
         ),
       );
+
       return false;
     }
   }
 
   Future<bool> sendOtp(String phone) async {
-    if (isLoading) return false;
+    final success = await _execute(
+      () => AuthService.sendWhatsAppOtp(phone),
+      'Could not send OTP. Try again.',
+    );
 
-    _setLoading(true);
+    if (!success) return false;
 
-    try {
-      final success = await AuthService.sendWhatsAppOtp(phone);
+    _update(
+      _state.copyWith(
+        step: AuthStep.otp,
+        secondsLeft: _resendSeconds,
+        clearError: true,
+      ),
+    );
 
-      if (!success) {
-        _update(
-          _state.copyWith(
-            isLoading: false,
-            errorMessage: 'Could not send OTP. Try again.',
-          ),
-        );
-        return false;
-      }
-
-      _update(
-        _state.copyWith(
-          step: AuthStep.otp,
-          isLoading: false,
-          secondsLeft: _resendSeconds,
-          clearError: true,
-        ),
-      );
-
-      _startTimer();
-      return true;
-    } catch (_) {
-      _update(
-        _state.copyWith(
-          isLoading: false,
-          errorMessage: 'Could not send OTP. Try again.',
-        ),
-      );
-      return false;
-    }
+    _startTimer();
+    return true;
   }
 
   Future<bool> resendOtp(String phone) async {
     if (!canResend || isLoading) return false;
 
-    _setLoading(true);
+    final success = await _execute(
+      () => AuthService.sendWhatsAppOtp(phone),
+      'Could not resend OTP. Try again.',
+    );
 
-    try {
-      final success = await AuthService.sendWhatsAppOtp(phone);
+    if (!success) return false;
 
-      if (!success) {
-        _update(
-          _state.copyWith(
-            isLoading: false,
-            errorMessage: 'Could not resend OTP. Try again.',
-          ),
-        );
-        return false;
-      }
+    _update(_state.copyWith(secondsLeft: _resendSeconds, clearError: true));
 
-      _update(
-        _state.copyWith(
-          isLoading: false,
-          secondsLeft: _resendSeconds,
-          clearError: true,
-        ),
-      );
-
-      _startTimer();
-      return true;
-    } catch (_) {
-      _update(
-        _state.copyWith(
-          isLoading: false,
-          errorMessage: 'Could not resend OTP. Try again.',
-        ),
-      );
-      return false;
-    }
+    _startTimer();
+    return true;
   }
 
   Future<bool> verifyOtp(String phone, String otp) async {
-    if (isLoading) return false;
+    final success = await _execute(
+      () => AuthService.verifyOtp(phone, otp),
+      'Invalid OTP. Please try again.',
+    );
 
-    _setLoading(true);
+    if (!success) return false;
 
-    try {
-      final success = await AuthService.verifyOtp(phone, otp);
+    _stopTimer();
 
-      if (!success) {
-        _update(
-          _state.copyWith(
-            isLoading: false,
-            errorMessage: 'Invalid OTP. Please try again.',
-          ),
-        );
-        return false;
-      }
+    _update(
+      _state.copyWith(
+        step: AuthStep.newPassword,
+        secondsLeft: 0,
+        clearError: true,
+      ),
+    );
 
-      _stopTimer();
-
-      _update(
-        _state.copyWith(
-          step: AuthStep.newPassword,
-          isLoading: false,
-          secondsLeft: 0,
-          clearError: true,
-        ),
-      );
-      return true;
-    } catch (_) {
-      _update(
-        _state.copyWith(
-          isLoading: false,
-          errorMessage: 'Unable to verify OTP. Please try again.',
-        ),
-      );
-      return false;
-    }
+    return true;
   }
 
   Future<bool> resetPassword(String phone, String newPassword) async {
-    if (isLoading) return false;
-
-    _setLoading(true);
-
-    try {
-      final success = await AuthService.resetPassword(phone, newPassword);
-
-      if (!success) {
-        _update(
-          _state.copyWith(
-            isLoading: false,
-            errorMessage: 'Could not update password. Try again.',
-          ),
-        );
-        return false;
-      }
-
-      _update(_state.copyWith(isLoading: false, clearError: true));
-      return true;
-    } catch (_) {
-      _update(
-        _state.copyWith(
-          isLoading: false,
-          errorMessage: 'Could not update password. Try again.',
-        ),
-      );
-      return false;
-    }
+    return _execute(
+      () => AuthService.resetPassword(phone, newPassword),
+      'Could not update password. Try again.',
+    );
   }
 
   void _startTimer() {
@@ -251,6 +199,7 @@ class AuthProvider extends ChangeNotifier {
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_state.secondsLeft <= 1) {
         timer.cancel();
+        _timer = null;
         _update(_state.copyWith(secondsLeft: 0));
         return;
       }

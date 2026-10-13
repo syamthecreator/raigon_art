@@ -12,6 +12,7 @@ class AppSidebar extends StatelessWidget {
     required this.onToggle,
     required this.onSelect,
     required this.onLogout,
+    required this.isAdmin,
   });
 
   static const double expandedWidth = 300;
@@ -22,6 +23,7 @@ class AppSidebar extends StatelessWidget {
   final VoidCallback onToggle;
   final ValueChanged<NavDestination> onSelect;
   final VoidCallback onLogout;
+  final bool isAdmin;
 
   @override
   Widget build(BuildContext context) {
@@ -45,14 +47,16 @@ class AppSidebar extends StatelessWidget {
                 child: ListView(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   children: [
-                    for (final d in NavDestination.values)
+                    for (final destination in NavDestination.values.where(
+                      (destination) => destination.canAccess(isAdmin: isAdmin),
+                    ))
                       _item(
                         p: p,
-                        label: d.label,
-                        icon: d.icon,
-                        active: d == current,
+                        label: destination.label,
+                        icon: destination.icon,
+                        active: destination == current,
                         showLabels: showLabels,
-                        onTap: () => onSelect(d),
+                        onTap: () => onSelect(destination),
                       ),
                   ],
                 ),

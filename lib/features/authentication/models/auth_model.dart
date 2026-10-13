@@ -9,19 +9,25 @@ class AuthModel {
     this.isLoading = false,
     this.secondsLeft = 0,
     this.isAuthenticated = false,
+    this.userRole,
     this.errorMessage,
     this.successMessage,
   });
 
-  static const String registeredPhone = '+91 9876543210';
+  static const String registeredPhone = '8137922114';
+  static const String adminEmail = 'admin@gmail.com';
+  static const String staffEmail = 'staff@gmail.com';
   static const String mockOtp = '1234';
+  static const String newPassword = '1234567890';
 
   final AuthStep step;
   final bool isLoading;
   final int secondsLeft;
   final bool isAuthenticated;
+  final String? userRole;
   final String? errorMessage;
   final String? successMessage;
+
   bool get canResend => secondsLeft == 0;
 
   String get timeText {
@@ -35,8 +41,10 @@ class AuthModel {
     bool? isLoading,
     int? secondsLeft,
     bool? isAuthenticated,
+    String? userRole,
     String? errorMessage,
     String? successMessage,
+    bool clearRole = false,
     bool clearError = false,
     bool clearSuccess = false,
   }) {
@@ -45,10 +53,11 @@ class AuthModel {
       isLoading: isLoading ?? this.isLoading,
       secondsLeft: secondsLeft ?? this.secondsLeft,
       isAuthenticated: isAuthenticated ?? this.isAuthenticated,
-      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+      userRole: clearRole ? null : userRole ?? this.userRole,
+      errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
       successMessage: clearSuccess
           ? null
-          : (successMessage ?? this.successMessage),
+          : successMessage ?? this.successMessage,
     );
   }
 }

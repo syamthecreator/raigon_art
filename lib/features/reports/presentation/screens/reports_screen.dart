@@ -16,109 +16,9 @@ import 'package:raigon_art/core/models/status.dart';
 
 enum ReportPeriod { month1, month2, allTime }
 
-class _PeriodData {
-  const _PeriodData({
-    required this.dropdownLabel,
-    required this.rangeLabel,
-    required this.billed,
-    required this.advance,
-    required this.growth,
-    required this.ratio,
-    required this.orders,
-    required this.chartLabels,
-    required this.chartValues,
-  });
-
-  final String dropdownLabel;
-  final String rangeLabel;
-  final int billed;
-  final int advance;
-  final String growth;
-  final String ratio;
-  final int orders;
-  final List<String> chartLabels;
-  final List<double> chartValues;
-
-  int get outstanding => billed - advance;
-  int get aov => orders == 0 ? 0 : (billed / orders).round();
-  String get chartTitle => 'Sales Trajectory ($rangeLabel)';
-}
-
-const Map<ReportPeriod, _PeriodData> _periods = {
-  ReportPeriod.month1: _PeriodData(
-    dropdownLabel: 'Last 1 Month (Sep - Oct 2026)',
-    rangeLabel: 'Last 30 Days (Sep - Oct 2026)',
-    billed: 38500,
-    advance: 23400,
-    growth: '+18.4%',
-    ratio: '48.1%',
-    orders: 5,
-    chartLabels: ['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'],
-    chartValues: [6200, 12000, 7700, 21500, 29200, 24600, 38500],
-  ),
-  ReportPeriod.month2: _PeriodData(
-    dropdownLabel: 'Last 2 Months (Aug - Oct 2026)',
-    rangeLabel: 'Last 60 Days (Aug - Oct 2026)',
-    billed: 43900,
-    advance: 28800,
-    growth: '+12.7%',
-    ratio: '65.6%',
-    orders: 6,
-    chartLabels: ['Aug 1', 'Aug 15', 'Sep 1', 'Sep 15', 'Oct 1', 'Oct 9'],
-    chartValues: [4200, 7800, 6100, 9400, 8600, 7800],
-  ),
-  ReportPeriod.allTime: _PeriodData(
-    dropdownLabel: 'All-Time Historical (Includes Archived)',
-    rangeLabel: 'All-Time Historical (Includes Archived)',
-    billed: 47900,
-    advance: 32800,
-    growth: '+31.2%',
-    ratio: '68.5%',
-    orders: 7,
-    chartLabels: [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-    ],
-    chartValues: [
-      2400,
-      5100,
-      3900,
-      6200,
-      12000,
-      7700,
-      21500,
-      29200,
-      24600,
-      38500,
-    ],
-  ),
-};
-
-const _activeOrder = ['RA-1003', 'RA-1004', 'RA-1001', 'RA-1005', 'RA-1002'];
-const _archivedOrder = ['RA-1002', 'RA-1004', 'RA-0995', 'RA-0988'];
-final DateTime _activeSince = DateTime(2026, 8, 1);
-
-final Map<String, DateTime> _deliveryFallback = {
-  'RA-1002': DateTime(2026, 8, 29),
-  'RA-1004': DateTime(2026, 8, 27),
-  'RA-0995': DateTime(2026, 7, 15),
-  'RA-0988': DateTime(2026, 6, 20),
-};
-
-const Map<String, String> _materialFallback = {
-  'RA-1002': 'Gold Filigree Resin',
-  'RA-1004': 'Natural Oak Float Wood',
-  'RA-0995': 'Teak Wood Moulding',
-  'RA-0988': 'Matte Black Aluminum',
-};
+// ---------------------------------------------------------------------------
+// Formatting helpers
+// ---------------------------------------------------------------------------
 
 String _inr(int v) {
   final s = v.abs().toString();
@@ -159,47 +59,322 @@ const _months = [
 String _date(DateTime d) =>
     '${_months[d.month - 1]} ${d.day.toString().padLeft(2, '0')}, ${d.year}';
 
+String _shortDate(DateTime d) => '${_months[d.month - 1]} ${d.day}';
+
 String _initials(String name) {
-  final parts = name.trim().split(RegExp(r'\s+'));
+  final parts = name
+      .trim()
+      .split(RegExp(r'\s+'))
+      .where((p) => p.isNotEmpty)
+      .toList();
+  if (parts.isEmpty) return '?';
   if (parts.length == 1) return parts.first[0].toUpperCase();
   return (parts.first[0] + parts[1][0]).toUpperCase();
 }
 
-int _orderIndex(List<String> order, String id) {
-  final i = order.indexOf(id);
-  return i == -1 ? -1 : i;
+DateTime _deliveryOf(Customer c) => c.expectedDelivery ?? c.orderDate;
+
+String _materialOf(Customer c) {
+  final frames = c.effectiveFrames;
+  if (frames.isEmpty) return c.frameType.trim().isEmpty ? '—' : c.frameType;
+  final first = frames.first.material.trim();
+  final base = first.isEmpty ? '—' : first;
+  return frames.length > 1 ? '$base +${frames.length - 1} more' : base;
 }
 
-List<Customer> _activeOf(List<Customer> all) {
-  final list = all.where((c) => !c.orderDate.isBefore(_activeSince)).toList();
-  list.sort(
-    (a, b) => _orderIndex(
-      _activeOrder,
-      a.id,
-    ).compareTo(_orderIndex(_activeOrder, b.id)),
-  );
-  return list;
+// ---------------------------------------------------------------------------
+// Report data (everything is computed from the real customer list)
+// ---------------------------------------------------------------------------
+
+class ShareItem {
+  const ShareItem(this.label, this.count, this.fraction);
+
+  final String label;
+  final int count;
+  final double fraction;
+
+  int get percent => (fraction * 100).round();
 }
 
-List<Customer> _archivedOf(List<Customer> all) {
-  final list = all.where((c) => c.status == Status.completed).toList();
-  list.sort(
-    (a, b) => _orderIndex(
-      _archivedOrder,
-      a.id,
-    ).compareTo(_orderIndex(_archivedOrder, b.id)),
-  );
-  return list;
+class ChartSeries {
+  const ChartSeries(this.labels, this.values);
+
+  final List<String> labels;
+  final List<double> values;
 }
 
-DateTime _deliveryOf(Customer c) =>
-    c.expectedDelivery ?? _deliveryFallback[c.id] ?? c.orderDate;
+class ReportData {
+  ReportData({
+    required List<Customer> customers,
+    required this.period,
+    DateTime? now,
+  }) : allCustomers = customers,
+       now = now ?? DateTime.now();
 
-String _materialOf(Customer c) =>
-    _materialFallback[c.id] ??
-    (c.effectiveFrames.isNotEmpty
-        ? c.effectiveFrames.first.material
-        : c.frameType);
+  final List<Customer> allCustomers;
+  final ReportPeriod period;
+  final DateTime now;
+
+  // ----- labels -----
+
+  static String dropdownLabel(ReportPeriod period, DateTime now) {
+    switch (period) {
+      case ReportPeriod.month1:
+        return 'Last 1 Month (${_rangeText(period, now)})';
+      case ReportPeriod.month2:
+        return 'Last 2 Months (${_rangeText(period, now)})';
+      case ReportPeriod.allTime:
+        return 'All-Time Historical (Includes Archived)';
+    }
+  }
+
+  static String _rangeText(ReportPeriod period, DateTime now) {
+    final today = DateTime(now.year, now.month, now.day);
+    final days = period == ReportPeriod.month1 ? 30 : 60;
+    final start = DateTime(today.year, today.month, today.day - (days - 1));
+    return '${_shortDate(start)} - ${_date(today)}';
+  }
+
+  String get rangeLabel {
+    switch (period) {
+      case ReportPeriod.month1:
+        return 'Last 30 Days (${_rangeText(period, now)})';
+      case ReportPeriod.month2:
+        return 'Last 60 Days (${_rangeText(period, now)})';
+      case ReportPeriod.allTime:
+        return 'All-Time Historical (Includes Archived)';
+    }
+  }
+
+  String get chartTitle => 'Sales Trajectory ($rangeLabel)';
+
+  // ----- date window -----
+
+  DateTime get today => DateTime(now.year, now.month, now.day);
+
+  DateTime get endExclusive => DateTime(today.year, today.month, today.day + 1);
+
+  DateTime get startDate {
+    switch (period) {
+      case ReportPeriod.month1:
+        return DateTime(today.year, today.month, today.day - 29);
+      case ReportPeriod.month2:
+        return DateTime(today.year, today.month, today.day - 59);
+      case ReportPeriod.allTime:
+        return DateTime(2000);
+    }
+  }
+
+  // Cancelled orders never count as business.
+  late final List<Customer> _billable = allCustomers
+      .where((c) => c.status != Status.cancelled)
+      .toList();
+
+  bool _inRange(Customer c, DateTime from, DateTime to) {
+    final d = DateTime(c.orderDate.year, c.orderDate.month, c.orderDate.day);
+    return !d.isBefore(from) && d.isBefore(to);
+  }
+
+  int _sumTotal(DateTime from, DateTime to) => _billable
+      .where((c) => _inRange(c, from, to))
+      .fold(0, (sum, c) => sum + c.total);
+
+  late final List<Customer> periodCustomers = _billable
+      .where((c) => _inRange(c, startDate, endExclusive))
+      .toList();
+
+  // ----- metrics -----
+
+  int get billed => periodCustomers.fold(0, (sum, c) => sum + c.total);
+
+  int get advance => periodCustomers.fold(0, (sum, c) => sum + c.advance);
+
+  int get outstanding =>
+      periodCustomers.fold(0, (sum, c) => sum + math.max(0, c.balance));
+
+  int get orders => periodCustomers.length;
+
+  int get aov => orders == 0 ? 0 : (billed / orders).round();
+
+  double get collectionRatio => billed <= 0 ? 0 : (advance / billed) * 100;
+
+  String get ratioLabel => '${collectionRatio.toStringAsFixed(1)}%';
+
+  /// Revenue growth: current window vs the window of the same length before it.
+  /// For "all time" the last 30 days are compared with the 30 days before.
+  double? get growthPct {
+    final n = period == ReportPeriod.month1
+        ? 30
+        : (period == ReportPeriod.month2 ? 60 : 30);
+    final curFrom = DateTime(today.year, today.month, today.day - (n - 1));
+    final prevFrom = DateTime(today.year, today.month, today.day - (2 * n - 1));
+    final cur = _sumTotal(curFrom, endExclusive);
+    final prev = _sumTotal(prevFrom, curFrom);
+    if (prev == 0) return null;
+    return (cur - prev) / prev * 100;
+  }
+
+  bool get growthPositive => (growthPct ?? 0) >= 0;
+
+  String get growthLabel {
+    final g = growthPct;
+    if (g == null) return 'No prior period data';
+    final sign = g >= 0 ? '+' : '';
+    return '$sign${g.toStringAsFixed(1)}% growth';
+  }
+
+  // ----- active / archived -----
+
+  List<Customer> get activeCustomers {
+    final cutoff = now.subtract(const Duration(days: 7));
+
+    return periodCustomers.where((c) {
+      final isArchived =
+          c.status == Status.completed && _deliveryOf(c).isBefore(cutoff);
+      return !isArchived;
+    }).toList()..sort((a, b) => b.orderDate.compareTo(a.orderDate));
+  }
+
+  List<Customer> get archivedCustomers {
+    final cutoff = now.subtract(const Duration(days: 7));
+
+    return periodCustomers.where((c) {
+      return c.status == Status.completed && _deliveryOf(c).isBefore(cutoff);
+    }).toList()..sort((a, b) => _deliveryOf(b).compareTo(_deliveryOf(a)));
+  }
+
+  // ----- chart -----
+
+  ChartSeries get chart {
+    if (period == ReportPeriod.allTime) return _monthlyChart();
+
+    final bucketDays = period == ReportPeriod.month1 ? 5 : 10;
+    final start = startDate;
+    final labels = <String>[];
+    final values = <double>[];
+
+    for (var i = 0; i < 6; i++) {
+      final from = DateTime(start.year, start.month, start.day + i * bucketDays);
+      final to = DateTime(
+        start.year,
+        start.month,
+        start.day + (i + 1) * bucketDays,
+      );
+      labels.add(_shortDate(from));
+      values.add(_sumTotal(from, to).toDouble());
+    }
+    return ChartSeries(labels, values);
+  }
+
+  ChartSeries _monthlyChart() {
+    final cur = DateTime(now.year, now.month);
+    var first = cur;
+
+    for (final c in periodCustomers) {
+      final m = DateTime(c.orderDate.year, c.orderDate.month);
+      if (m.isBefore(first)) first = m;
+    }
+
+    var months = <DateTime>[];
+    for (
+      var m = first;
+      !m.isAfter(cur);
+      m = DateTime(m.year, m.month + 1)
+    ) {
+      months.add(m);
+    }
+    if (months.length > 12) months = months.sublist(months.length - 12);
+    if (months.length < 2) {
+      months.insert(0, DateTime(cur.year, cur.month - 1));
+    }
+
+    final labels = <String>[];
+    final values = <double>[];
+    for (final m in months) {
+      final suffix = m.year != now.year
+          ? " '${(m.year % 100).toString().padLeft(2, '0')}"
+          : '';
+      labels.add('${_months[m.month - 1]}$suffix');
+
+      final sum = periodCustomers
+          .where(
+            (c) => c.orderDate.year == m.year && c.orderDate.month == m.month,
+          )
+          .fold<int>(0, (a, c) => a + c.total);
+      values.add(sum.toDouble());
+    }
+    return ChartSeries(labels, values);
+  }
+
+  // ----- frame size / material share -----
+
+  /// Quantity of a frame row. For single-frame orders the order-level qty is
+  /// used (it already includes qty x number of photos).
+  int _qtyOf(Customer c, int frameQty, int frameCount) =>
+      frameCount == 1 ? c.qty : frameQty;
+
+  Map<String, int> get frameSizeCounts {
+    final counts = <String, int>{};
+    for (final c in periodCustomers) {
+      final frames = c.effectiveFrames;
+      for (final f in frames) {
+        final label = f.sizeLabel.trim();
+        if (label.isEmpty) continue;
+        counts[label] = (counts[label] ?? 0) + _qtyOf(c, f.qty, frames.length);
+      }
+    }
+    return counts;
+  }
+
+  Map<String, int> get materialCounts {
+    final counts = <String, int>{};
+    for (final c in periodCustomers) {
+      final frames = c.effectiveFrames;
+      for (final f in frames) {
+        final material = f.material.trim();
+        if (material.isEmpty) continue;
+        counts[material] =
+            (counts[material] ?? 0) + _qtyOf(c, f.qty, frames.length);
+      }
+    }
+    return counts;
+  }
+
+  List<ShareItem> _shares(Map<String, int> counts, int maxItems) {
+    final total = counts.values.fold<int>(0, (a, b) => a + b);
+    if (total == 0) return const [];
+
+    final entries = counts.entries.toList()
+      ..sort((a, b) {
+        final byCount = b.value.compareTo(a.value);
+        return byCount != 0 ? byCount : a.key.compareTo(b.key);
+      });
+
+    final items = <ShareItem>[];
+    if (entries.length <= maxItems) {
+      for (final e in entries) {
+        items.add(ShareItem(e.key, e.value, e.value / total));
+      }
+    } else {
+      for (final e in entries.take(maxItems - 1)) {
+        items.add(ShareItem(e.key, e.value, e.value / total));
+      }
+      final rest = entries
+          .skip(maxItems - 1)
+          .fold<int>(0, (a, e) => a + e.value);
+      items.add(ShareItem('Other', rest, rest / total));
+    }
+    return items;
+  }
+
+  List<ShareItem> get topFrameSizes => _shares(frameSizeCounts, 4);
+
+  List<ShareItem> get topMaterials => _shares(materialCounts, 4);
+}
+
+// ---------------------------------------------------------------------------
+// Screen
+// ---------------------------------------------------------------------------
 
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
@@ -215,14 +390,13 @@ class _ReportsScreenState extends State<ReportsScreen> {
   static const _goldText = Color(0xFFB49A55);
   static const _red = Color(0xFFE0605E);
 
-  _PeriodData get _d => _periods[_period]!;
-
   Future<void> _exportPdf(
+    ReportData d,
     List<Customer> active,
     List<Customer> archived,
   ) async {
-    final d = _d;
     try {
+      final sizes = d.topFrameSizes;
       final doc = pw.Document();
       doc.addPage(
         pw.MultiPage(
@@ -243,10 +417,28 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 ['Outstanding Balance Due', 'Rs. ${_inr(d.outstanding)}'],
                 ['Average Order Value (AOV)', 'Rs. ${_inr(d.aov)}'],
                 ['Orders Analyzed', '${d.orders}'],
-                ['Growth', '${d.growth} growth'],
-                ['Collection Ratio', d.ratio],
+                ['Growth', d.growthLabel],
+                ['Collection Ratio', d.ratioLabel],
               ],
             ),
+            if (sizes.isNotEmpty) ...[
+              pw.SizedBox(height: 18),
+              pw.Text(
+                'Top Frame Sizes Sold',
+                style: pw.TextStyle(
+                  fontSize: 13,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+              pw.SizedBox(height: 6),
+              _pdfTable(
+                ['Frame Size', 'Quantity', 'Share'],
+                [
+                  for (final s in sizes)
+                    [s.label, '${s.count}', '${s.percent}%'],
+                ],
+              ),
+            ],
             pw.SizedBox(height: 18),
             pw.Text(
               'Active Customers (${active.length})',
@@ -263,7 +455,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     c.frameSize,
                     'Rs. ${_inr(c.total)}',
                     'Rs. ${_inr(c.advance)}',
-                    'Rs. ${_inr(c.balance)}',
+                    'Rs. ${_inr(math.max(0, c.balance))}',
                   ],
               ],
             ),
@@ -282,7 +474,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     c.id,
                     '${c.frameSize} - ${_materialOf(c)}',
                     _date(_deliveryOf(c)),
-                    'Rs. ${_inr(c.total)}',
+                    'Rs. ${_inr(c.advance)}',
                   ],
               ],
             ),
@@ -305,35 +497,42 @@ class _ReportsScreenState extends State<ReportsScreen> {
     }
   }
 
- @override
-Widget build(BuildContext context) {
-  final p = AppPalette.of(context);
-  final customerProvider = context.watch<CustomerAndOrderProvider>();
-  final all = customerProvider.customers;
+  @override
+  Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
+    final customerProvider = context.watch<CustomerAndOrderProvider>();
+    final report = ReportData(
+      customers: customerProvider.customers,
+      period: _period,
+    );
+    final active = report.activeCustomers;
+    final archived = report.archivedCustomers;
 
-  final active = _activeOf(all);
-  final archived = _archivedOf(all);
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(24, 28, 24, 32),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _titleRow(p, report, active, archived),
+          const SizedBox(height: 24),
+          _filterBar(p, report),
+          const SizedBox(height: 24),
+          _metricRow(p, report),
+          const SizedBox(height: 26),
+          _chartRow(p, report),
+          const SizedBox(height: 26),
+          _customerCard(p, active, archived),
+        ],
+      ),
+    );
+  }
 
-  return SingleChildScrollView(
-    padding: const EdgeInsets.fromLTRB(24, 28, 24, 32),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _titleRow(p, active, archived),
-        const SizedBox(height: 24),
-        _filterBar(p),
-        const SizedBox(height: 24),
-        _metricRow(p),
-        const SizedBox(height: 26),
-        _chartRow(p),
-        const SizedBox(height: 26),
-        _customerCard(p, active, archived),
-      ],
-    ),
-  );
-}
-
-  Widget _titleRow(AppPalette p, List<Customer> active, List<Customer> arch) {
+  Widget _titleRow(
+    AppPalette p,
+    ReportData d,
+    List<Customer> active,
+    List<Customer> arch,
+  ) {
     final titleBlock = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -358,7 +557,7 @@ Widget build(BuildContext context) {
         AppDropdown<ReportPeriod>(
           value: _period,
           items: ReportPeriod.values,
-          labelOf: (x) => _periods[x]!.dropdownLabel,
+          labelOf: (x) => ReportData.dropdownLabel(x, d.now),
           onChanged: (v) => setState(() => _period = v),
           width: 233,
         ),
@@ -366,7 +565,7 @@ Widget build(BuildContext context) {
         _GradientButton(
           icon: Icons.picture_as_pdf,
           label: 'Export PDF Summary',
-          onTap: () => _exportPdf(active, arch),
+          onTap: () => _exportPdf(d, active, arch),
           fontSize: 15.5,
           vPad: 14,
         ),
@@ -392,7 +591,7 @@ Widget build(BuildContext context) {
     );
   }
 
-  Widget _filterBar(AppPalette p) {
+  Widget _filterBar(AppPalette p, ReportData d) {
     final pill = Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
@@ -437,7 +636,7 @@ Widget build(BuildContext context) {
           pill,
           const SizedBox(width: 12),
           Text(
-            _d.rangeLabel,
+            d.rangeLabel,
             style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w700,
@@ -453,8 +652,8 @@ Widget build(BuildContext context) {
     );
   }
 
-  Widget _metricRow(AppPalette p) {
-    final d = _d;
+  Widget _metricRow(AppPalette p, ReportData d) {
+    final growthColor = d.growthPositive ? AppPalette.statusGreen : _red;
     final cards = <Widget>[
       _MetricCard(
         label: 'TOTAL BILLED REVENUE',
@@ -466,9 +665,9 @@ Widget build(BuildContext context) {
         ),
         badge: _badge(
           p,
-          '${d.growth} growth',
-          AppPalette.statusGreen,
-          icon: Icons.trending_up,
+          d.growthLabel,
+          growthColor,
+          icon: d.growthPositive ? Icons.trending_up : Icons.trending_down,
         ),
       ),
       _MetricCard(
@@ -483,7 +682,7 @@ Widget build(BuildContext context) {
           ),
           child: const Icon(Icons.savings, size: 22, color: Colors.white),
         ),
-        badge: _badge(p, '${d.ratio} Collection Ratio', _goldText),
+        badge: _badge(p, '${d.ratioLabel} Collection Ratio', _goldText),
       ),
       _MetricCard(
         label: 'OUTSTANDING BALANCE DUE',
@@ -503,7 +702,7 @@ Widget build(BuildContext context) {
         tile: _tile(const Color(0xFFF7EFD9), Icons.receipt_long, _goldText),
         badge: _badge(
           p,
-          '${d.orders} Orders Analyzed',
+          '${d.orders} ${d.orders == 1 ? 'Order' : 'Orders'} Analyzed',
           _goldText,
           icon: Icons.shopping_bag,
         ),
@@ -564,11 +763,11 @@ Widget build(BuildContext context) {
     );
   }
 
-  Widget _chartRow(AppPalette p) {
+  Widget _chartRow(AppPalette p, ReportData d) {
     return LayoutBuilder(
       builder: (context, c) {
-        final chart = _salesCard(p);
-        final sizes = _topSizesCard(p);
+        final chart = _salesCard(p, d);
+        final sizes = _topSizesCard(p, d);
         if (c.maxWidth < 1000) {
           return Column(children: [chart, const SizedBox(height: 26), sizes]);
         }
@@ -586,8 +785,8 @@ Widget build(BuildContext context) {
     );
   }
 
-  Widget _salesCard(AppPalette p) {
-    final d = _d;
+  Widget _salesCard(AppPalette p, ReportData d) {
+    final series = d.chart;
     return Container(
       padding: const EdgeInsets.all(26),
       decoration: p.card(radius: 16),
@@ -611,7 +810,11 @@ Widget build(BuildContext context) {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Monthly billed revenue trajectory',
+                      d.period == ReportPeriod.allTime
+                          ? 'Monthly billed revenue trajectory'
+                          : 'Billed revenue trajectory (per '
+                                '${d.period == ReportPeriod.month1 ? '5' : '10'}'
+                                '-day period)',
                       style: TextStyle(fontSize: 13, color: p.textMuted),
                     ),
                   ],
@@ -660,8 +863,8 @@ Widget build(BuildContext context) {
               curve: Curves.easeOutCubic,
               builder: (context, t, _) => CustomPaint(
                 painter: _TrajectoryPainter(
-                  values: d.chartValues,
-                  labels: d.chartLabels,
+                  values: series.values,
+                  labels: series.labels,
                   progress: t,
                   dark: p.isDark,
                   muted: p.textMuted,
@@ -675,11 +878,34 @@ Widget build(BuildContext context) {
     );
   }
 
-  Widget _topSizesCard(AppPalette p) {
+  Widget _topSizesCard(AppPalette p, ReportData d) {
     final goldPct = p.isDark ? AppColors.gold : _goldText;
     final track = p.isDark ? const Color(0xFF1F2135) : p.chipFill;
 
-    Widget row(String label, int pct, Color pctColor, Decoration fill) {
+    final sizes = d.topFrameSizes;
+    final materials = d.topMaterials;
+
+    final rowStyles = <(Color, Decoration)>[
+      (goldPct, const BoxDecoration(gradient: AppColors.darkGradient)),
+      (
+        AppPalette.statusGreen,
+        const BoxDecoration(color: AppPalette.statusGreen),
+      ),
+      (AppPalette.teal, const BoxDecoration(color: AppPalette.teal)),
+      (const Color(0xFFF2A04E), const BoxDecoration(color: Color(0xFFF2A04E))),
+    ];
+
+    final chipStyles = <(Color, Color)>[
+      (
+        p.isDark ? const Color(0xFF4A4A52) : const Color(0xFFF5EFE0),
+        goldPct,
+      ),
+      (const Color(0xFFD8F5E3), const Color(0xFF3FB866)),
+      (const Color(0xFFD9F3F8), AppPalette.teal),
+      (const Color(0xFFFDEBDD), const Color(0xFFF2A04E)),
+    ];
+
+    Widget row(ShareItem item, Color pctColor, Decoration fill) {
       return Padding(
         padding: const EdgeInsets.only(bottom: 18),
         child: Column(
@@ -688,7 +914,9 @@ Widget build(BuildContext context) {
               children: [
                 Expanded(
                   child: Text(
-                    label,
+                    '${item.label} (${item.count})',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: 15.5,
                       fontWeight: FontWeight.w500,
@@ -696,8 +924,9 @@ Widget build(BuildContext context) {
                     ),
                   ),
                 ),
+                const SizedBox(width: 8),
                 Text(
-                  '$pct% of volume',
+                  '${item.percent}% of volume',
                   style: TextStyle(
                     fontSize: 15.5,
                     fontWeight: FontWeight.w600,
@@ -714,7 +943,7 @@ Widget build(BuildContext context) {
                 color: track,
                 alignment: Alignment.centerLeft,
                 child: FractionallySizedBox(
-                  widthFactor: pct / 100,
+                  widthFactor: item.fraction.clamp(0.0, 1.0),
                   child: DecoratedBox(
                     decoration: fill,
                     child: const SizedBox.expand(),
@@ -739,6 +968,11 @@ Widget build(BuildContext context) {
       ),
     );
 
+    Widget emptyNote(String text) => Padding(
+      padding: const EdgeInsets.only(bottom: 18),
+      child: Text(text, style: TextStyle(fontSize: 14, color: p.textMuted)),
+    );
+
     return Container(
       padding: const EdgeInsets.all(26),
       decoration: p.card(radius: 16),
@@ -755,34 +989,16 @@ Widget build(BuildContext context) {
           ),
           const SizedBox(height: 4),
           Text(
-            'Sales volume breakdown by standard frame size',
+            'Sales volume breakdown by frame size',
             style: TextStyle(fontSize: 13, color: p.textMuted),
           ),
           const SizedBox(height: 22),
-          row(
-            '12 × 18 inch (Large Gallery)',
-            45,
-            goldPct,
-            const BoxDecoration(gradient: AppColors.darkGradient),
-          ),
-          row(
-            '8 × 12 inch (Medium Portrait)',
-            30,
-            AppPalette.statusGreen,
-            const BoxDecoration(color: AppPalette.statusGreen),
-          ),
-          row(
-            '16 × 20 inch (Wholesale Gallery)',
-            15,
-            AppPalette.teal,
-            const BoxDecoration(color: AppPalette.teal),
-          ),
-          row(
-            '20 × 30 inch & Custom Sizes',
-            10,
-            const Color(0xFFF2A04E),
-            const BoxDecoration(color: Color(0xFFF2A04E)),
-          ),
+          if (sizes.isEmpty)
+            emptyNote('No frame orders in this period.')
+          else
+            for (var i = 0; i < sizes.length; i++)
+              row(sizes[i], rowStyles[i % rowStyles.length].$1,
+                  rowStyles[i % rowStyles.length].$2),
           const SizedBox(height: 2),
           Divider(height: 1, color: p.rowDivider),
           const SizedBox(height: 18),
@@ -796,28 +1012,24 @@ Widget build(BuildContext context) {
             ),
           ),
           const SizedBox(height: 12),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              chip(
-                'Teak Wood (40%)',
-                p.isDark ? const Color(0xFF4A4A52) : const Color(0xFFF5EFE0),
-                goldPct,
-              ),
-              chip(
-                'Synthetic Molded (35%)',
-                const Color(0xFFD8F5E3),
-                const Color(0xFF3FB866),
-              ),
-              chip('Metallic (15%)', const Color(0xFFD9F3F8), AppPalette.teal),
-              chip(
-                'Glass Mat (10%)',
-                const Color(0xFFFDEBDD),
-                const Color(0xFFF2A04E),
-              ),
-            ],
-          ),
+          if (materials.isEmpty)
+            Text(
+              'No material data in this period.',
+              style: TextStyle(fontSize: 14, color: p.textMuted),
+            )
+          else
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                for (var i = 0; i < materials.length; i++)
+                  chip(
+                    '${materials[i].label} (${materials[i].percent}%)',
+                    chipStyles[i % chipStyles.length].$1,
+                    chipStyles[i % chipStyles.length].$2,
+                  ),
+              ],
+            ),
         ],
       ),
     );
@@ -886,11 +1098,24 @@ Widget build(BuildContext context) {
           if (_showArchived) ...[
             _banner(archived.length),
             const SizedBox(height: 14),
-            _archivedTable(p, archived),
+            archived.isEmpty
+                ? _emptyState(p, 'No archived orders in this period.')
+                : _archivedTable(p, archived),
           ] else
-            _activeTable(p, active),
+            active.isEmpty
+                ? _emptyState(p, 'No active customers in this period.')
+                : _activeTable(p, active),
         ],
       ),
+    );
+  }
+
+  Widget _emptyState(AppPalette p, String text) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 40),
+      alignment: Alignment.center,
+      child: Text(text, style: TextStyle(fontSize: 15, color: p.textMuted)),
     );
   }
 
@@ -1277,15 +1502,22 @@ Widget build(BuildContext context) {
               const SizedBox(height: 2),
               Text(
                 _materialOf(c),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(fontSize: 13, color: p.textMuted),
               ),
             ],
           ),
           Text(_date(_deliveryOf(c)), style: t(FontWeight.w500, 13.5, green)),
-          Text(
-            '${_money(c.total)} (Paid)',
-            style: t(FontWeight.w700, 15.5, green),
-          ),
+          c.balance <= 0
+              ? Text(
+                  '${_money(c.total)} (Paid)',
+                  style: t(FontWeight.w700, 15.5, green),
+                )
+              : Text(
+                  '${_money(c.advance)} (${_money(c.balance)} due)',
+                  style: t(FontWeight.w700, 14, _red),
+                ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
@@ -1355,6 +1587,10 @@ Widget build(BuildContext context) {
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// Widgets
+// ---------------------------------------------------------------------------
 
 class _MetricCard extends StatefulWidget {
   const _MetricCard({
@@ -1470,7 +1706,8 @@ class _TrajectoryPainter extends CustomPainter {
     final baseY = size.height - bottom;
     final plotH = baseY - top;
     final w = size.width - padX * 2;
-    final maxV = values.reduce(math.max);
+    final rawMax = values.reduce(math.max);
+    final maxV = rawMax <= 0 ? 1.0 : rawMax;
 
     final pts = <Offset>[
       for (var i = 0; i < values.length; i++)

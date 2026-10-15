@@ -6,50 +6,62 @@ class AutoInk {
   static Color text(BuildContext c) => AppPalette.of(c).textPrimary;
   static Color muted(BuildContext c) => AppPalette.of(c).textMuted;
   static Color panel(BuildContext c) =>
-      Theme.of(c).colorScheme.onSurface.withOpacity(0.05);
+      Theme.of(c).colorScheme.onSurface.withValues(alpha: 0.05);
   static Color line(BuildContext c) =>
-      Theme.of(c).colorScheme.onSurface.withOpacity(0.12);
+      Theme.of(c).colorScheme.onSurface.withValues(alpha: 0.12);
   static Color card(BuildContext c) => Theme.of(c).colorScheme.surface;
 
   static const blue = Color(0xFF0866FF);
   static const purple = Color(0xFF6C47FF);
   static const whatsapp = Color(0xFF25D366);
   static const lavender = Color(0xFFF1EDFB);
-  static const instagram = [Color(0xFFF58529), Color(0xFFDD2A7B), Color(0xFF8134AF)];
+  static const instagram = [
+    Color(0xFFF58529),
+    Color(0xFFDD2A7B),
+    Color(0xFF8134AF),
+  ];
 }
 
 class AutoPanel extends StatelessWidget {
-  const AutoPanel({super.key, required this.child, this.padding = const EdgeInsets.all(16)});
+  const AutoPanel({
+    super.key,
+    required this.child,
+    this.padding = const EdgeInsets.all(16),
+  });
   final Widget child;
   final EdgeInsets padding;
 
   @override
   Widget build(BuildContext context) => Container(
-        width: double.infinity,
-        padding: padding,
-        decoration: BoxDecoration(
-          color: AutoInk.panel(context),
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: child,
-      );
+    width: double.infinity,
+    padding: padding,
+    decoration: BoxDecoration(
+      color: AutoInk.panel(context),
+      borderRadius: BorderRadius.circular(14),
+    ),
+    child: child,
+  );
 }
 
 class AutoCard extends StatelessWidget {
-  const AutoCard({super.key, required this.child, this.padding = const EdgeInsets.all(18)});
+  const AutoCard({
+    super.key,
+    required this.child,
+    this.padding = const EdgeInsets.all(18),
+  });
   final Widget child;
   final EdgeInsets padding;
 
   @override
   Widget build(BuildContext context) => Container(
-        padding: padding,
-        decoration: BoxDecoration(
-          color: AutoInk.card(context),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AutoInk.line(context)),
-        ),
-        child: child,
-      );
+    padding: padding,
+    decoration: BoxDecoration(
+      color: AutoInk.card(context),
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: AutoInk.line(context)),
+    ),
+    child: child,
+  );
 }
 
 class AutoButton extends StatelessWidget {
@@ -89,7 +101,9 @@ class AutoButton extends StatelessWidget {
         Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
       ],
     );
-    final shape = RoundedRectangleBorder(borderRadius: BorderRadius.circular(10));
+    final shape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(10),
+    );
     final btn = filled
         ? FilledButton(
             style: FilledButton.styleFrom(
@@ -155,16 +169,19 @@ class AutoChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => InkWell(
+    borderRadius: BorderRadius.circular(20),
+    onTap: onTap,
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      decoration: BoxDecoration(
+        color: AutoInk.blue.withValues(alpha: 0.08),
+        border: Border.all(color: AutoInk.blue.withValues(alpha: 0.25)),
         borderRadius: BorderRadius.circular(20),
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-          decoration: BoxDecoration(
-            color: AutoInk.blue.withOpacity(0.08),
-            border: Border.all(color: AutoInk.blue.withOpacity(0.25)),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Text(label, style: const TextStyle(color: AutoInk.blue, fontSize: 13)),
-        ),
-      );
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(color: AutoInk.blue, fontSize: 13),
+      ),
+    ),
+  );
 }

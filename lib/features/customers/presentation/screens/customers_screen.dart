@@ -18,6 +18,7 @@ import 'package:raigon_art/core/models/status.dart';
 import 'package:raigon_art/core/widgets/shell_scope.dart';
 import 'package:raigon_art/core/provider/customer_and_order_provider.dart';
 import 'package:raigon_art/features/customers/provider/customers_screen_provider.dart';
+import 'package:raigon_art/features/customers/service/customer_whatsapp_service.dart';
 
 class CustomersScreen extends StatefulWidget {
   const CustomersScreen({super.key});
@@ -48,6 +49,35 @@ class _CustomersScreenState extends State<CustomersScreen> {
       if (mounted) {
         AppSnackBar.error(context, 'Could not delete customer. Try again.');
       }
+    }
+  }
+
+  Future<void> _sendWhatsApp(Customer customer) async {
+    try {
+      final opened = await CustomerWhatsAppService.openOrderConfirmation(
+        customer,
+      );
+
+      if (!mounted) return;
+
+      if (opened) {
+        AppSnackBar.success(
+          context,
+          'WhatsApp opened with the order confirmation.',
+        );
+      } else {
+        AppSnackBar.error(
+          context,
+          'Could not open WhatsApp. Please try again.',
+        );
+      }
+    } catch (error) {
+      if (!mounted) return;
+
+      AppSnackBar.error(
+        context,
+        'Could not open WhatsApp. Check the customer mobile number.',
+      );
     }
   }
 
@@ -153,7 +183,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
                       CustomersTable(
                         customers: pageItems,
                         onView: (c) => showViewCustomerDialog(context, c),
-                        onWhatsApp: (c) {},
+                        onWhatsApp: _sendWhatsApp,
                         onEdit: _edit,
                         onDelete: _delete,
                       ),

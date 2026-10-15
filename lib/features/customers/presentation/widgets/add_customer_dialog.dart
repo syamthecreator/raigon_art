@@ -18,6 +18,7 @@ import 'package:raigon_art/features/customers/presentation/widgets/frame_spec_fi
 import 'package:raigon_art/core/models/status.dart';
 import 'package:raigon_art/core/provider/customer_and_order_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:raigon_art/features/customers/service/customer_whatsapp_service.dart';
 import 'package:raigon_art/features/frame_sizes/providers/frame_size_provider.dart';
 
 Future<void> showAddCustomerDialog(BuildContext context) async {
@@ -48,15 +49,38 @@ Future<void> showAddCustomerDialog(BuildContext context) async {
   if (result == null || !context.mounted) return;
 
   try {
+    // Save the customer first.
     await context.read<CustomerAndOrderProvider>().add(result);
 
-    if (context.mounted) {
-      AppSnackBar.success(
-        context,
-        'Customer & frame order saved successfully.',
+    if (!context.mounted) return;
+
+    AppSnackBar.success(context, 'Customer & frame order saved successfully.');
+
+    // Open the same WhatsApp order confirmation template.
+    try {
+      final opened = await CustomerWhatsAppService.openOrderConfirmation(
+        result,
       );
+
+      if (!opened && context.mounted) {
+        AppSnackBar.error(
+          context,
+          'Customer saved, but WhatsApp could not be opened.',
+        );
+      }
+    } catch (error) {
+      debugPrint('WhatsApp confirmation failed: $error');
+
+      if (context.mounted) {
+        AppSnackBar.error(
+          context,
+          'Customer saved, but WhatsApp could not be opened.',
+        );
+      }
     }
   } catch (error) {
+    debugPrint('Customer save failed: $error');
+
     if (context.mounted) {
       AppSnackBar.error(context, 'Could not save customer. Try again.');
     }
@@ -250,12 +274,8 @@ class _AddCustomerDialogState extends State<AddCustomerDialog> {
       debugPrint('========== FILE PICK SUCCESS: ${result.length} ==========');
 
       return result;
-    } catch (e, stackTrace) {
-      debugPrint('========== FILE PICK ERROR ==========');
-      debugPrint('Error: $e');
-      debugPrint('Type: ${e.runtimeType}');
-      debugPrint('$stackTrace');
-
+    } catch (error) {
+      debugPrint('[CustomerImages] File selection failed: $error');
       rethrow;
     }
   }
@@ -420,6 +440,7 @@ class _AddCustomerDialogState extends State<AddCustomerDialog> {
       status: _status,
       orderDate: _orderDate,
       expectedDelivery: _delivery,
+      photoUrls: widget.existing?.photoUrls ?? const [],
       frames: frames,
     );
     Navigator.of(context).pop(customer);

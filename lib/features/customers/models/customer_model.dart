@@ -162,4 +162,35 @@ class Customer {
     photoNames: photoNames,
     photoSizeLabels: photoSizeLabels,
   );
+
+  Customer copyWithImages({
+    List<Uint8List>? photoBytes,
+    List<String>? photoNames,
+    List<String>? photoUrls,
+    List<FrameSpec>? frames,
+    int? photoCount,
+  }) => Customer(
+    id: id,
+    name: name,
+    city: city,
+    phone: phone,
+    address: address,
+    photoCount: photoCount ?? this.photoCount,
+    photoNames: photoNames ?? this.photoNames,
+    photoUrls: photoUrls ?? this.photoUrls,
+    frameSize: frameSize,
+    frameType: frameType,
+    qty: qty,
+    total: total,
+    advance: advance,
+    status: status,
+    orderDate: orderDate,
+    altPhone: altPhone,
+    pincode: pincode,
+    expectedDelivery: expectedDelivery,
+    paymentStatus: paymentStatus,
+    frames: frames ?? this.frames,
+    photoBytes: photoBytes ?? this.photoBytes,
+    photoSizeLabels: photoSizeLabels,
+  );
 }

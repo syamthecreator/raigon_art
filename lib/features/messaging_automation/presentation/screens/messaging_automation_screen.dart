@@ -1040,7 +1040,7 @@ class _TabBar extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: p.tab == e.key
-                        ? AutoInk.blue.withOpacity(0.1)
+                        ? AutoInk.blue.withValues(alpha: 0.1)
                         : Colors.transparent,
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
@@ -1302,7 +1302,7 @@ class _InboxTab extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: active ? AutoInk.blue.withOpacity(0.08) : Colors.transparent,
+          color: active ? AutoInk.blue.withValues(alpha: 0.08) : Colors.transparent,
           border: Border.all(
             color: active ? AutoInk.blue : AutoInk.line(context),
           ),
@@ -1342,7 +1342,7 @@ class _InboxTab extends StatelessWidget {
                   selected: p.selectedThread == t,
                   onTap: () => p.selectThread(t),
                   leading: CircleAvatar(
-                    backgroundColor: AutoInk.purple.withOpacity(0.15),
+                    backgroundColor: AutoInk.purple.withValues(alpha: 0.15),
                     child: Text(t.name[0].toUpperCase()),
                   ),
                   title: Text(
@@ -1453,7 +1453,7 @@ class _InboxTab extends StatelessWidget {
             Align(
               alignment: Alignment.centerRight,
               child: Chip(
-                backgroundColor: AutoInk.purple.withOpacity(0.15),
+                backgroundColor: AutoInk.purple.withValues(alpha: 0.15),
                 label: Text('🤖 ${t.reply}'),
               ),
             ),

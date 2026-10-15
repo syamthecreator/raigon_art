@@ -26,33 +26,56 @@ Future<void> showViewCustomerDialog(
   }
 }
 
-
 class _VaultPhoto {
   const _VaultPhoto({
     required this.name,
     required this.sizeLabel,
     required this.image,
   });
+
   final String name;
   final String sizeLabel;
   final ImageProvider image;
 }
 
 List<_VaultPhoto> _photosOf(Customer c) {
-  return [
-    for (var i = 0; i < c.photoBytes.length; i++)
+  final photos = <_VaultPhoto>[];
+
+  // Show images stored in memory, if available.
+  for (var i = 0; i < c.photoBytes.length; i++) {
+    final bytes = c.photoBytes[i];
+
+    photos.add(
       _VaultPhoto(
         name: i < c.photoNames.length ? c.photoNames[i] : 'Photo_${i + 1}.jpg',
         sizeLabel: PickedPhoto(
           name: '',
-          bytes: c.photoBytes[i],
-          size: c.photoBytes[i].length,
+          bytes: bytes,
+          size: bytes.length,
         ).sizeLabel,
-        image: MemoryImage(c.photoBytes[i]),
+        image: MemoryImage(bytes),
       ),
-  ];
-}
+    );
+  }
 
+  // Show images loaded from Firebase Storage after refresh.
+  for (var i = 0; i < c.photoUrls.length; i++) {
+    final url = c.photoUrls[i];
+
+    // Avoid displaying the same photo twice if both lists contain it.
+    if (url.trim().isEmpty) continue;
+
+    photos.add(
+      _VaultPhoto(
+        name: i < c.photoNames.length ? c.photoNames[i] : 'Photo_${i + 1}.jpg',
+        sizeLabel: 'Saved photo',
+        image: NetworkImage(url),
+      ),
+    );
+  }
+
+  return photos;
+}
 
 String _inr(int v) {
   final s = v.abs().toString();
@@ -86,7 +109,6 @@ String _paymentLabel(Customer c) {
   if (c.total > 0 && c.advance >= c.total) return 'Paid';
   return 'Partial';
 }
-
 
 class ViewCustomerDialog extends StatefulWidget {
   const ViewCustomerDialog({super.key, required this.customer});
@@ -135,7 +157,6 @@ class _ViewCustomerDialogState extends State<ViewCustomerDialog> {
       ),
     );
   }
-
 
   Widget _header(AppPalette p) {
     return Padding(
@@ -192,7 +213,6 @@ class _ViewCustomerDialogState extends State<ViewCustomerDialog> {
     );
   }
 
-
   Widget _body(FormColors c) {
     final p = c.p;
     final frames = _c.effectiveFrames;
@@ -246,7 +266,6 @@ class _ViewCustomerDialogState extends State<ViewCustomerDialog> {
       ),
     );
   }
-
 
   Color _highlightBg(AppPalette p) =>
       p.isDark ? const Color(0xFF383A66) : const Color(0xFFFBF8F1);
@@ -384,7 +403,6 @@ class _ViewCustomerDialogState extends State<ViewCustomerDialog> {
       ),
     );
   }
-
 
   Widget _card(FormColors c, {required Widget child, EdgeInsets? padding}) {
     final p = c.p;
@@ -604,7 +622,6 @@ class _ViewCustomerDialogState extends State<ViewCustomerDialog> {
     );
   }
 
-
   Widget _specCard(FormColors c, List<FrameSpec> frames, int index) {
     final p = c.p;
     final f = frames[index];
@@ -770,7 +787,6 @@ class _ViewCustomerDialogState extends State<ViewCustomerDialog> {
     );
   }
 
-
   Widget _vault(FormColors c, List<_VaultPhoto> photos) {
     final p = c.p;
     return Column(
@@ -810,7 +826,6 @@ class _ViewCustomerDialogState extends State<ViewCustomerDialog> {
     );
   }
 
-
   Widget _footer(FormColors c) {
     final p = c.p;
 
@@ -832,8 +847,7 @@ class _ViewCustomerDialogState extends State<ViewCustomerDialog> {
           const SizedBox(width: 10),
 
           InkWell(
-            onTap: () {
-            },
+            onTap: () {},
             borderRadius: BorderRadius.circular(8),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
@@ -892,7 +906,6 @@ class _ViewCustomerDialogState extends State<ViewCustomerDialog> {
     );
   }
 }
-
 
 class _VaultCard extends StatefulWidget {
   const _VaultCard({required this.photo, required this.index});

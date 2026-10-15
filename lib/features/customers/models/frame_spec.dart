@@ -15,6 +15,7 @@ class FrameSpec {
     this.notes = '',
     this.photoName,
     this.photoBytes,
+    this.photoUrl,
   });
 
   final String size;
@@ -29,6 +30,7 @@ class FrameSpec {
   final String notes;
   final String? photoName;
   final Uint8List? photoBytes;
+  final String? photoUrl;
 
   String get sizeLabel => (customWidth.isNotEmpty && customHeight.isNotEmpty)
       ? '$customWidth × $customHeight ${unit.toLowerCase()}'
@@ -46,7 +48,8 @@ class FrameSpec {
     'qty': qty,
     'notes': notes,
     'photoName': photoName,
-    'photoBytes': photoBytes == null ? null : base64Encode(photoBytes!),
+    'photoUrl': photoUrl,
+    // Do not save image bytes directly in Firestore.
   };
 
   factory FrameSpec.fromJson(Map<String, dynamic> j) => FrameSpec(
@@ -58,9 +61,11 @@ class FrameSpec {
     material: j['material'] as String? ?? '',
     finish: j['finish'] as String? ?? '',
     orientation: j['orientation'] as String? ?? '',
-    qty: j['qty'] as int? ?? 1,
+    qty: (j['qty'] as num?)?.toInt() ?? 1,
     notes: j['notes'] as String? ?? '',
     photoName: j['photoName'] as String?,
+    photoUrl: j['photoUrl'] as String?,
+    // Supports older documents that contain Base64 image bytes.
     photoBytes: j['photoBytes'] == null
         ? null
         : base64Decode(j['photoBytes'] as String),

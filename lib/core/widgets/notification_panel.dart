@@ -68,7 +68,7 @@ class _NotificationPanelState extends State<NotificationPanel> {
                   Row(
                     children: [
                       Text(
-                        'Action Notifications 🔔',
+                        'Action Notifications',
                         style: TextStyle(
                           fontSize: 17,
                           fontWeight: FontWeight.w700,

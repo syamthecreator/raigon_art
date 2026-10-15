@@ -13,8 +13,53 @@ import 'package:raigon_art/features/customers/presentation/widgets/customer_view
 import 'package:raigon_art/core/widgets/shell_scope.dart';
 import 'package:raigon_art/core/provider/customer_and_order_provider.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  final ScrollController _horizontalController = ScrollController();
+  final ScrollController _verticalController = ScrollController();
+
+  static const double _pagePadding = 24;
+  static const double _tableHPadding = 28;
+  static const double _statCardHeight = 150; // estimated, used for page height
+  static const double _minRecentCardHeight = 360;
+
+  // Column widths in logical pixels. Used as the minimum width of each column
+  // and as the flex proportion when the screen is wider than the table.
+  static const _cols = <({String label, double width})>[
+    (label: 'CUSTOMER ID', width: 130),
+    (label: 'CUSTOMER NAME', width: 230),
+    (label: 'PHONE NO', width: 150),
+    (label: 'FRAME SIZE', width: 130),
+    (label: 'FRAME TYPE', width: 150),
+    (label: 'QTY', width: 70),
+    (label: 'TOTAL', width: 130),
+    (label: 'STATUS', width: 150),
+    (label: 'ACTIONS', width: 110),
+  ];
+
+  static final double _minTableWidth =
+      _cols.fold<double>(0, (a, c) => a + c.width) + (_tableHPadding * 2);
+
+  @override
+  void dispose() {
+    _horizontalController.dispose();
+    _verticalController.dispose();
+    super.dispose();
+  }
+
+  static int _statColsFor(double width) => width >= 1100
+      ? 5
+      : width >= 700
+      ? 3
+      : width >= 440
+      ? 2
+      : 1;
 
   @override
   Widget build(BuildContext context) {
@@ -29,56 +74,105 @@ class DashboardScreen extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        return Padding(
+        final innerWidth = math.max(
+          constraints.maxWidth - (_pagePadding * 2),
+          0.0,
+        );
+
+        // Estimate the minimum height the page needs so nothing overflows.
+        const gap = 20.0;
+        final statCols = _statColsFor(innerWidth);
+        final statRows = (5 / statCols).ceil();
+        final titleH = constraints.maxWidth < 640 ? 130.0 : 70.0;
+        final statsH = statRows * _statCardHeight + (statRows - 1) * gap;
+        final minPageHeight =
+            (_pagePadding * 2) +
+            titleH +
+            24 +
+            statsH +
+            24 +
+            _minRecentCardHeight;
+
+        final content = Padding(
           padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Dashboard Overview',
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w700,
-                            color: p.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Welcome back, Raigon Arts Workshop Manager',
-                          style: TextStyle(fontSize: 15.5, color: p.textMuted),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  AppPrimaryButton(
-                    label: 'Add New Customer',
-                    icon: Icons.person_add,
-                    onPressed: () => ShellScope.of(context).openAddCustomer(),
-                  ),
-                ],
-              ),
+              _buildTitleRow(context, p),
 
               const SizedBox(height: 24),
 
-              _buildStatsGrid(
-                context,
-                width: constraints.maxWidth - 48,
-                customers: customers,
-              ),
+              _buildStatsGrid(context, width: innerWidth, customers: customers),
 
               const SizedBox(height: 24),
 
               Expanded(child: _buildRecentOrdersCard(context, customers)),
             ],
           ),
+        );
+
+        // If the available height is too small, let the whole page scroll
+        // vertically instead of overflowing.
+        if (constraints.maxHeight >= minPageHeight) {
+          return content;
+        }
+        return SingleChildScrollView(
+          child: SizedBox(
+            height: minPageHeight,
+            width: constraints.maxWidth,
+            child: content,
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildTitleRow(BuildContext context, AppPalette p) {
+    final titleBlock = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Dashboard Overview',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.w700,
+            color: p.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Welcome back, Raigon Arts Workshop Manager',
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(fontSize: 15.5, color: p.textMuted),
+        ),
+      ],
+    );
+
+    final addButton = AppPrimaryButton(
+      label: 'Add New Customer',
+      icon: Icons.person_add,
+      onPressed: () => ShellScope.of(context).openAddCustomer(),
+    );
+
+    return LayoutBuilder(
+      builder: (context, c) {
+        // Narrow screens: stack the button under the title.
+        if (c.maxWidth < 640) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [titleBlock, const SizedBox(height: 14), addButton],
+          );
+        }
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: titleBlock),
+            const SizedBox(width: 16),
+            addButton,
+          ],
         );
       },
     );
@@ -211,13 +305,7 @@ class DashboardScreen extends StatelessWidget {
         ];
 
     const gap = 20.0;
-    final cols = width >= 1100
-        ? 5
-        : width >= 700
-        ? 3
-        : width >= 440
-        ? 2
-        : 1;
+    final cols = _statColsFor(width);
     final cardWidth = (width - gap * (cols - 1)) / cols;
 
     return Wrap(
@@ -286,6 +374,7 @@ class DashboardScreen extends StatelessWidget {
                       alignment: Alignment.centerLeft,
                       child: Text(
                         value,
+                        maxLines: 1,
                         style: TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.w800,
@@ -315,12 +404,16 @@ class DashboardScreen extends StatelessWidget {
             children: [
               Icon(footIcon, size: 16, color: footColor),
               const SizedBox(width: 4),
-              Text(
-                footStrong,
-                style: TextStyle(
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w700,
-                  color: footColor,
+              Flexible(
+                child: Text(
+                  footStrong,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                    color: footColor,
+                  ),
                 ),
               ),
               const SizedBox(width: 6),
@@ -343,16 +436,18 @@ class DashboardScreen extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final dashCount = (constraints.maxWidth / 8).floor();
-        return SizedBox(
-          height: 1,
-          width: double.infinity,
-          child: Row(
-            children: [
-              for (var i = 0; i < dashCount; i++) ...[
-                Container(width: 4, height: 1, color: color),
-                if (i != dashCount - 1) const SizedBox(width: 4),
+        return ClipRect(
+          child: SizedBox(
+            height: 1,
+            width: double.infinity,
+            child: Row(
+              children: [
+                for (var i = 0; i < dashCount; i++) ...[
+                  Container(width: 4, height: 1, color: color),
+                  if (i != dashCount - 1) const SizedBox(width: 4),
+                ],
               ],
-            ],
+            ),
           ),
         );
       },
@@ -366,35 +461,36 @@ class DashboardScreen extends StatelessWidget {
     final p = AppPalette.of(context);
     final sortedCustomers = [...customers]
       ..sort((a, b) => b.orderDate.compareTo(a.orderDate));
+
     const pageSize = 8;
     final recent = sortedCustomers.take(pageSize).toList();
-    const cols = <({String label, int flex})>[
-      (label: 'CUSTOMER ID', flex: 12),
-      (label: 'CUSTOMER NAME', flex: 24),
-      (label: 'PHONE NO', flex: 18),
-      (label: 'FRAME SIZE', flex: 16),
-      (label: 'FRAME TYPE', flex: 18),
-      (label: 'QTY', flex: 8),
-      (label: 'TOTAL', flex: 13),
-      (label: 'STATUS', flex: 17),
-      (label: 'ACTIONS', flex: 12),
-    ];
+
+    // Flex values derived from the pixel widths.
+    final flex = _cols.map((c) => c.width.round()).toList();
 
     Widget headerRow() => Container(
       color: p.tableHeaderBg,
-      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 22),
+      padding: const EdgeInsets.symmetric(
+        horizontal: _tableHPadding,
+        vertical: 22,
+      ),
       child: Row(
         children: [
-          for (final c in cols)
+          for (var i = 0; i < _cols.length; i++)
             Expanded(
-              flex: c.flex,
-              child: Text(
-                c.label,
-                style: TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.2,
-                  color: p.headerText,
+              flex: flex[i],
+              child: Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Text(
+                  _cols[i].label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.2,
+                    color: p.headerText,
+                  ),
                 ),
               ),
             ),
@@ -409,20 +505,34 @@ class DashboardScreen extends StatelessWidget {
         fontWeight: FontWeight.w700,
         color: p.textPrimary,
       );
+
+      Widget cellBox(int i, Widget child) => Expanded(
+        flex: flex[i],
+        child: Padding(padding: const EdgeInsets.only(right: 8), child: child),
+      );
+
+      Widget txt(String s, TextStyle style) => Text(
+        s,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        softWrap: false,
+        style: style,
+      );
+
       return Container(
         decoration: BoxDecoration(
           border: Border(top: BorderSide(color: p.rowDivider)),
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+        padding: const EdgeInsets.symmetric(
+          horizontal: _tableHPadding,
+          vertical: 16,
+        ),
         child: Row(
           children: [
-            Expanded(
-              flex: cols[0].flex,
-              child: Text(o.id, style: bold),
-            ),
-            Expanded(
-              flex: cols[1].flex,
-              child: Row(
+            cellBox(0, txt(o.id, bold)),
+            cellBox(
+              1,
+              Row(
                 children: [
                   Container(
                     width: 44,
@@ -444,20 +554,20 @@ class DashboardScreen extends StatelessWidget {
                   const SizedBox(width: 14),
                   Expanded(
                     child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        txt(
                           o.name,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
+                          TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
                             color: p.textPrimary,
                           ),
                         ),
-                        Text(
+                        txt(
                           o.city,
-                          style: TextStyle(fontSize: 13, color: p.textMuted),
+                          TextStyle(fontSize: 13, color: p.textMuted),
                         ),
                       ],
                     ),
@@ -465,61 +575,97 @@ class DashboardScreen extends StatelessWidget {
                 ],
               ),
             ),
-            Expanded(
-              flex: cols[2].flex,
-              child: Text(o.phone, style: cell),
-            ),
-            Expanded(
-              flex: cols[3].flex,
-              child: Text(o.frameSize, style: cell),
-            ),
-            Expanded(
-              flex: cols[4].flex,
-              child: Text(o.frameType, style: cell),
-            ),
-            Expanded(
-              flex: cols[5].flex,
-              child: Text('${o.qty}', style: bold),
-            ),
-            Expanded(
-              flex: cols[6].flex,
-              child: Text(_inr(o.total), style: bold),
-            ),
-            Expanded(
-              flex: cols[7].flex,
-              child: Align(
+            cellBox(2, txt(o.phone, cell)),
+            cellBox(3, txt(o.frameSize, cell)),
+            cellBox(4, txt(o.frameType, cell)),
+            cellBox(5, txt('${o.qty}', bold)),
+            cellBox(6, txt(_inr(o.total), bold)),
+            cellBox(
+              7,
+              Align(
                 alignment: Alignment.centerLeft,
-                child: StatusPill(status: o.status),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: StatusPill(status: o.status),
+                ),
               ),
             ),
-            Expanded(
-              flex: cols[8].flex,
-              child: Row(
-                children: [
-                  InkWell(
-                    onTap: () => showViewCustomerDialog(context, o),
-                    child: Icon(
-                      Icons.visibility,
-                      size: 21,
-                      color: p.textPrimary,
-                    ),
+            cellBox(
+              8,
+              Align(
+                alignment: Alignment.centerLeft,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      InkWell(
+                        onTap: () => showViewCustomerDialog(context, o),
+                        child: Icon(
+                          Icons.visibility,
+                          size: 21,
+                          color: p.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(width: 18),
+                      InkWell(
+                        onTap: () => showEditCustomerDialog(context, o),
+                        child: Icon(
+                          Icons.edit_outlined,
+                          size: 20,
+                          color: p.textPrimary,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 18),
-                  InkWell(
-                    onTap: () => showEditCustomerDialog(context, o),
-                    child: Icon(
-                      Icons.edit_outlined,
-                      size: 20,
-                      color: p.textPrimary,
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           ],
         ),
       );
     }
+
+    final cardTitle = Text(
+      'Recent Customer Frame Orders',
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: TextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.w700,
+        color: p.textPrimary,
+      ),
+    );
+
+    final viewAllButton = InkWell(
+      onTap: () => ShellScope.of(context).goTo(NavDestination.customers),
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
+        decoration: BoxDecoration(
+          color: p.chipFill,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'View All Customers',
+              maxLines: 1,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: p.textPrimary,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Icon(Icons.arrow_forward, size: 17, color: p.textPrimary),
+          ],
+        ),
+      ),
+    );
 
     return Container(
       decoration: p.card(),
@@ -529,80 +675,105 @@ class DashboardScreen extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(28, 22, 28, 20),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'Recent Customer Frame Orders',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: p.textPrimary,
-                    ),
-                  ),
-                ),
-                InkWell(
-                  onTap: () =>
-                      ShellScope.of(context).goTo(NavDestination.customers),
-                  borderRadius: BorderRadius.circular(8),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 18,
-                      vertical: 11,
-                    ),
-                    decoration: BoxDecoration(
-                      color: p.chipFill,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'View All Customers',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: p.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Icon(
-                          Icons.arrow_forward,
-                          size: 17,
-                          color: p.textPrimary,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
+            child: LayoutBuilder(
+              builder: (context, c) {
+                // Narrow card: stack the button under the title.
+                if (c.maxWidth < 420) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      cardTitle,
+                      const SizedBox(height: 12),
+                      viewAllButton,
+                    ],
+                  );
+                }
+                return Row(
+                  children: [
+                    Expanded(child: cardTitle),
+                    const SizedBox(width: 12),
+                    viewAllButton,
+                  ],
+                );
+              },
             ),
           ),
           Expanded(
             child: LayoutBuilder(
               builder: (context, constraints) {
-                final tableWidth = math.max(constraints.maxWidth, 1000.0);
-                return SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: SizedBox(
-                    width: tableWidth,
-                    child: Column(
-                      children: [
-                        headerRow(),
-                        if (recent.isEmpty)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 48),
-                            child: Text(
-                              'No orders yet',
-                              style: TextStyle(
-                                fontSize: 15,
-                                color: p.textMuted,
+                final tableWidth = math.max(
+                  constraints.maxWidth,
+                  _minTableWidth,
+                );
+
+                return ScrollbarTheme(
+                  data: ScrollbarThemeData(
+                    thumbColor: const WidgetStatePropertyAll(AppColors.gold),
+                    trackColor: WidgetStatePropertyAll(
+                      AppColors.gold.withValues(alpha: 0.12),
+                    ),
+                    thickness: const WidgetStatePropertyAll(6),
+                    radius: const Radius.circular(3),
+                  ),
+                  child: Scrollbar(
+                    controller: _horizontalController,
+                    thumbVisibility: true,
+                    trackVisibility: true,
+                    notificationPredicate: (notification) =>
+                        notification.depth == 0 &&
+                        notification.metrics.axis == Axis.horizontal,
+                    child: SingleChildScrollView(
+                      controller: _horizontalController,
+                      primary: false,
+                      scrollDirection: Axis.horizontal,
+                      child: SizedBox(
+                        width: tableWidth,
+                        height: constraints.maxHeight,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            headerRow(),
+                            Expanded(
+                              child: Scrollbar(
+                                controller: _verticalController,
+                                thumbVisibility: true,
+                                trackVisibility: true,
+                                notificationPredicate: (notification) =>
+                                    notification.depth == 0 &&
+                                    notification.metrics.axis == Axis.vertical,
+                                child: SingleChildScrollView(
+                                  controller: _verticalController,
+                                  primary: false,
+                                  scrollDirection: Axis.vertical,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      if (recent.isEmpty)
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 48,
+                                          ),
+                                          child: Center(
+                                            child: Text(
+                                              'No orders yet',
+                                              style: TextStyle(
+                                                fontSize: 15,
+                                                color: p.textMuted,
+                                              ),
+                                            ),
+                                          ),
+                                        )
+                                      else
+                                        for (final c in recent) orderRow(c),
+                                    ],
+                                  ),
+                                ),
                               ),
                             ),
-                          )
-                        else
-                          for (final c in recent) orderRow(c),
-                      ],
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 );

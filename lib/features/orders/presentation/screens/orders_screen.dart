@@ -13,6 +13,7 @@ import 'package:raigon_art/features/customers/presentation/widgets/customer_view
 import 'package:raigon_art/core/models/status.dart';
 import 'package:raigon_art/core/widgets/shell_scope.dart';
 import 'package:raigon_art/core/provider/customer_and_order_provider.dart';
+import 'package:raigon_art/features/customers/presentation/widgets/customers_table.dart';
 
 class OrdersScreen extends StatefulWidget {
   const OrdersScreen({super.key});
@@ -25,6 +26,8 @@ class _OrdersScreenState extends State<OrdersScreen> {
   Status? _filter;
   String _query = '';
   static const int _pageSize = 10;
+  static const double _minPageHeight = 560;
+  static const double _tableHPadding = 20;
   final ScrollController _horizontalController = ScrollController();
   final ScrollController _verticalController = ScrollController();
 
@@ -49,19 +52,28 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
   final Map<String, Status> _statusOverride = {};
 
-  static const _flex = [
-    15, // Order ID
-    20, // Customer
-    19, // Phone
-    14, // Photos
-    20, // Frame Specs
-    10, // Qty
-    20, // Total
-    23, // Payment
-    25, // Status
-    23, // Delivery
-    22, // Actions
+  // Column widths in logical pixels. Used both as the minimum width of each
+  // column and as the flex proportion when the screen is wider than the table.
+  static const _colWidths = <double>[
+    110, // Order ID
+    170, // Customer
+    150, // Phone
+    130, // Photos
+    150, // Frame Specs
+    70, // Qty
+    120, // Total
+    140, // Payment
+    170, // Status
+    140, // Delivery
+    130, // Actions
   ];
+
+  static final double _minTableWidth =
+      _colWidths.fold<double>(0, (a, b) => a + b) + (_tableHPadding * 2);
+
+  // Flex values derived from the pixel widths.
+  static final List<int> _flex = _colWidths.map((w) => w.round()).toList();
+
   static const _headers = [
     'ORDER ID',
     'CUSTOMER',
@@ -162,7 +174,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
     int count(Status? s) =>
         s == null ? all.length : all.where((c) => _statusOf(c) == s).length;
 
-    return Padding(
+    final content = Padding(
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -200,39 +212,77 @@ class _OrdersScreenState extends State<OrdersScreen> {
         ],
       ),
     );
+
+    // If the available height is too small, let the whole page scroll
+    // vertically instead of overflowing.
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxHeight >= _minPageHeight) {
+          return content;
+        }
+        return SingleChildScrollView(
+          child: SizedBox(
+            height: _minPageHeight,
+            width: constraints.maxWidth,
+            child: content,
+          ),
+        );
+      },
+    );
   }
 
   Widget _titleRow(AppPalette p) {
-    return Row(
+    final titleBlock = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Order Management',
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w800,
-                  color: p.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'Track, update and manage wholesale & retail custom frame orders',
-                style: TextStyle(fontSize: 14.5, color: p.textMuted),
-              ),
-            ],
+        Text(
+          'Order Management',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 26,
+            fontWeight: FontWeight.w800,
+            color: p.textPrimary,
           ),
         ),
-        const SizedBox(width: 16),
-        AppPrimaryButton(
-          label: 'Add New Customer',
-          icon: Icons.person_add,
-          onPressed: () => ShellScope.of(context).openAddCustomer(),
+        const SizedBox(height: 6),
+        Text(
+          'Track, update and manage wholesale & retail custom frame orders',
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(fontSize: 14.5, color: p.textMuted),
         ),
       ],
+    );
+
+    final addButton = AppPrimaryButton(
+      label: 'Add New Customer',
+      icon: Icons.person_add,
+      onPressed: () => ShellScope.of(context).openAddCustomer(),
+    );
+
+    return LayoutBuilder(
+      builder: (context, c) {
+        // Narrow screens: stack the button under the title.
+        if (c.maxWidth < 640) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              titleBlock,
+              const SizedBox(height: 14),
+              addButton,
+            ],
+          );
+        }
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: titleBlock),
+            const SizedBox(width: 16),
+            addButton,
+          ],
+        );
+      },
     );
   }
 
@@ -277,6 +327,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   ),
                   child: Text(
                     '$label (${count(status)})',
+                    maxLines: 1,
                     style: TextStyle(
                       fontSize: 15.5,
                       fontWeight: FontWeight.w600,
@@ -294,31 +345,38 @@ class _OrdersScreenState extends State<OrdersScreen> {
   Widget _searchField(AppPalette p) {
     return Align(
       alignment: Alignment.centerLeft,
-      child: SizedBox(
-        width: 340,
-        height: 44,
-        child: TextField(
-          onChanged: (v) {
-            setState(() {
-              _query = v;
-              _page = 1;
-            });
-          },
-          cursorColor: p.textPrimary,
-          style: TextStyle(fontSize: 14.5, color: p.textPrimary),
-          decoration: InputDecoration(
-            isDense: true,
-            hintText: 'Search order ID, customer name...',
-            hintStyle: TextStyle(fontSize: 14.5, color: p.textMuted),
-            prefixIcon: Icon(Icons.search, size: 22, color: p.textMuted),
-            contentPadding: const EdgeInsets.symmetric(vertical: 12),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: p.border),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: AppColors.gold),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 340),
+        child: SizedBox(
+          height: 44,
+          child: TextField(
+            onChanged: (v) {
+              setState(() {
+                _query = v;
+                _page = 1;
+              });
+            },
+            cursorColor: p.textPrimary,
+            style: TextStyle(fontSize: 14.5, color: p.textPrimary),
+            decoration: InputDecoration(
+              isDense: true,
+              hintText: 'Search order ID, customer name...',
+              hintMaxLines: 1,
+              hintStyle: TextStyle(
+                fontSize: 14.5,
+                color: p.textMuted,
+                overflow: TextOverflow.ellipsis,
+              ),
+              prefixIcon: Icon(Icons.search, size: 22, color: p.textMuted),
+              contentPadding: const EdgeInsets.symmetric(vertical: 12),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: p.border),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: AppColors.gold),
+              ),
             ),
           ),
         ),
@@ -329,7 +387,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
   Widget _table(AppPalette p, List<Customer> rows) {
     return LayoutBuilder(
       builder: (context, c) {
-        final tableWidth = math.max(c.maxWidth, 1240.0);
+        final tableWidth = math.max(c.maxWidth, _minTableWidth);
 
         return ScrollbarTheme(
           data: ScrollbarThemeData(
@@ -435,21 +493,24 @@ class _OrdersScreenState extends State<OrdersScreen> {
     return Container(
       height: 50,
       color: p.tableHeaderBg,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: _tableHPadding),
       child: Row(
         children: [
           for (var i = 0; i < _headers.length; i++)
             Expanded(
               flex: _flex[i],
-              child: Text(
-                _headers[i],
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 1.1,
-                  color: p.headerText,
+              child: Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Text(
+                  _headers[i],
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 1.1,
+                    color: p.headerText,
+                  ),
                 ),
               ),
             ),
@@ -507,7 +568,18 @@ class _OrderRowState extends State<_OrderRow> {
 
     Widget cell(int i, Widget child) => Expanded(
       flex: f[i],
-      child: Align(alignment: Alignment.centerLeft, child: child),
+      child: Padding(
+        padding: const EdgeInsets.only(right: 8),
+        child: Align(alignment: Alignment.centerLeft, child: child),
+      ),
+    );
+
+    Widget txt(String s, TextStyle style) => Text(
+      s,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      softWrap: false,
+      style: style,
     );
 
     TextStyle body({FontWeight w = FontWeight.w500}) =>
@@ -533,30 +605,47 @@ class _OrderRowState extends State<_OrderRow> {
         ),
         child: Row(
           children: [
-            cell(0, Text(c.id, style: body(w: FontWeight.w700))),
-            cell(1, Text(c.name, style: body(w: FontWeight.w600))),
-            cell(2, Text(c.phone, style: body())),
-            cell(3, Text('${c.photoCount} Photos', style: body())),
+            cell(0, txt(c.id, body(w: FontWeight.w700))),
+            cell(1, txt(c.name, body(w: FontWeight.w600))),
+            cell(2, txt(c.phone, body())),
+
+            cell(
+              3,
+              ClipRect(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: PhotoStrip(
+                    count: c.photoCount,
+                    urls: c.photoUrls,
+                    bytes: c.photoBytes,
+                    seed: c.id.hashCode,
+                  ),
+                ),
+              ),
+            ),
+
             cell(
               4,
               Column(
+                mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(c.frameSize, style: body()),
+                  txt(c.frameSize, body()),
                   const SizedBox(height: 2),
-                  Text(
+                  txt(
                     c.frameType.isNotEmpty ? c.frameType : spec.frameType,
-                    style: TextStyle(fontSize: 12.5, color: p.textMuted),
+                    TextStyle(fontSize: 12.5, color: p.textMuted),
                   ),
                 ],
               ),
             ),
-            cell(5, Text('${c.qty}', style: body(w: FontWeight.w700))),
-            cell(6, Text(widget.totalLabel, style: body(w: FontWeight.w700))),
+            cell(5, txt('${c.qty}', body(w: FontWeight.w700))),
+            cell(6, txt(widget.totalLabel, body(w: FontWeight.w700))),
             cell(7, _paymentChip()),
             cell(8, _statusDropdown()),
-            cell(9, Text(widget.deliveryLabel, style: body())),
+            cell(9, txt(widget.deliveryLabel, body())),
             cell(10, _actions()),
           ],
         ),
@@ -566,20 +655,25 @@ class _OrderRowState extends State<_OrderRow> {
 
   Widget _paymentChip() {
     final color = widget.paymentColor(widget.payment);
-    return Container(
-      width: 120,
-      height: 30,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        widget.payment,
-        style: TextStyle(
-          fontSize: 13.5,
-          fontWeight: FontWeight.w500,
-          color: color,
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 120),
+      child: Container(
+        width: 120,
+        height: 30,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.14),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Text(
+          widget.payment,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 13.5,
+            fontWeight: FontWeight.w500,
+            color: color,
+          ),
         ),
       ),
     );
@@ -587,49 +681,52 @@ class _OrderRowState extends State<_OrderRow> {
 
   Widget _statusDropdown() {
     final color = widget.statusColor(widget.status);
-    return PopupMenuButton<Status>(
-      tooltip: '',
-      onSelected: widget.onStatus,
-      offset: const Offset(0, 38),
-      color: widget.p.surface,
-      itemBuilder: (_) => [
-        for (final s in Status.values)
-          PopupMenuItem(
-            value: s,
-            child: Text(
-              widget.statusLabel(s),
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                color: widget.statusColor(s),
-              ),
-            ),
-          ),
-      ],
-      child: Container(
-        width: 138,
-        height: 36,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.14),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: color.withValues(alpha: 0.45)),
-        ),
-        child: Row(
-          children: [
-            Expanded(
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 138),
+      child: PopupMenuButton<Status>(
+        tooltip: '',
+        onSelected: widget.onStatus,
+        offset: const Offset(0, 38),
+        color: widget.p.surface,
+        itemBuilder: (_) => [
+          for (final s in Status.values)
+            PopupMenuItem(
+              value: s,
               child: Text(
-                widget.statusLabel(widget.status),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+                widget.statusLabel(s),
                 style: TextStyle(
-                  fontSize: 14.5,
                   fontWeight: FontWeight.w600,
-                  color: color,
+                  color: widget.statusColor(s),
                 ),
               ),
             ),
-            Icon(Icons.keyboard_arrow_down, size: 20, color: color),
-          ],
+        ],
+        child: Container(
+          width: 138,
+          height: 36,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.14),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: color.withValues(alpha: 0.45)),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  widget.statusLabel(widget.status),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w600,
+                    color: color,
+                  ),
+                ),
+              ),
+              Icon(Icons.keyboard_arrow_down, size: 20, color: color),
+            ],
+          ),
         ),
       ),
     );

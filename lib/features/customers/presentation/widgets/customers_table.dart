@@ -372,58 +372,58 @@ class PhotoStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = AppPalette.of(context);
-    if (count == 0) {
+
+    if (count <= 0) {
       return Text(
         'No photos',
-        style: TextStyle(fontSize: 13, color: p.textMuted),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(fontSize: 12, color: p.textMuted),
       );
     }
-    final shown = math.min(count, 3);
+
+    const thumbSize = 30.0;
+    const gap = 3.0;
+    const maxThumbs = 2;
+
+    final shown = math.min(count, maxThumbs);
     final extra = count - shown;
+
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        for (var i = 0; i < shown; i++)
-          Padding(padding: const EdgeInsets.only(right: 4), child: _thumb(i)),
-        if (extra > 0)
-          Container(
-            width: 34,
-            height: 34,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: const Color(0xFF2A2A40),
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: Colors.white, width: 1.5),
-            ),
+        for (var i = 0; i < shown; i++) ...[
+          if (i > 0) const SizedBox(width: gap),
+          _thumb(i, thumbSize),
+        ],
+        if (extra > 0) ...[
+          const SizedBox(width: 3),
+          Flexible(
             child: Text(
               '+$extra',
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
+              maxLines: 1,
+              overflow: TextOverflow.clip,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: p.textMuted,
               ),
             ),
           ),
-        const SizedBox(width: 8),
-        Text('($count)', style: TextStyle(fontSize: 12.5, color: p.textMuted)),
+        ],
       ],
     );
   }
 
-  Widget _thumb(int i) {
+  Widget _thumb(int i, double size) {
     final url = i < urls.length ? urls[i] : '';
+
     return Container(
-      width: 34,
-      height: 34,
+      width: size,
+      height: size,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: Colors.white, width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.12),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(5),
+        border: Border.all(color: Colors.white, width: 1),
       ),
       clipBehavior: Clip.antiAlias,
       child: i < bytes.length

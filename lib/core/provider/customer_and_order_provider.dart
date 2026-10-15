@@ -198,18 +198,20 @@ class CustomerAndOrderProvider extends ChangeNotifier {
   List<Customer> get filteredOrders {
     final query = _orderQuery.trim().toLowerCase();
 
-    return _customers.where((customer) {
+    final result = _customers.where((customer) {
       if (_orderFilter != null && statusOf(customer) != _orderFilter) {
         return false;
       }
 
-      if (query.isEmpty) {
-        return true;
-      }
+      if (query.isEmpty) return true;
 
       return customer.id.toLowerCase().contains(query) ||
           customer.name.toLowerCase().contains(query);
     }).toList();
+
+    result.sort((a, b) => b.orderDate.compareTo(a.orderDate));
+
+    return result;
   }
 
   int get orderTotalPages {

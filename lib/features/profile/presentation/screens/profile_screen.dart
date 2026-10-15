@@ -184,31 +184,26 @@ class ProfileScreen extends StatelessWidget {
                   const SizedBox(height: 20),
                   Divider(color: p.border, height: 1),
                   const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.auto_awesome,
-                        size: 16,
-                        color: AppColors.gold,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Powered by Raigon Arts',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: p.textMuted,
+                  Center(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.auto_awesome,
+                          size: 16,
+                          color: AppColors.gold,
                         ),
-                      ),
-                      const Spacer(),
-                      Flexible(
-                        child: Text(
-                          'Business Profile',
-                          textAlign: TextAlign.end,
-                          style: TextStyle(fontSize: 12, color: p.textMuted),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Powered by Raigon Arts',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: p.textMuted,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ],
               ),
